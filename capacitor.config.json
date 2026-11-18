@@ -1,0 +1,10 @@
+{
+  "appId": "kz.parkly.demo",
+  "appName": "Parkly",
+  "webDir": "dist",
+  "backgroundColor": "#262B33",
+  "android": {
+    "appendUserAgent": "ParklyDemo/1.0",
+    "backgroundColor": "#262B33"
+  }
+}

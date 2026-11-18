@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Parkly: мятная метка с буквой P. Источник — art/icon-foreground.svg -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="#3DDBB0"
+        android:pathData="M54,26.5C43.2,26.5 34.5,35 34.5,45.6C34.5,60 54,80.5 54,80.5S73.5,60 73.5,45.6C73.5,35 64.8,26.5 54,26.5Z" />
+    <path android:fillColor="#262B33" android:fillType="evenOdd"
+        android:pathData="M45.5,35.5H55.5A8,8 0,0 1,55.5 51.5H52V58.5H45.5ZM52,41V46H55A2.5,2.5 0,0 0,55 41Z" />
+</vector>

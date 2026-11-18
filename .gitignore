@@ -1,0 +1,11 @@
+node_modules
+dist
+*.log
+ml/.venv
+release-test/*.apk
+ml/test_days.csv
+catalog/raw/
+catalog/.venv/
+Parkly.apk
+release/
+.claude/

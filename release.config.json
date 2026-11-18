@@ -1,0 +1,12 @@
+{
+  "versionCode": 4,
+  "versionName": "1.3",
+  "manifestUrl": "https://systemdfan-0.github.io/parkly/manifest.json",
+  "trustedHosts": [
+    "github.com",
+    "objects.githubusercontent.com",
+    "release-assets.githubusercontent.com"
+  ],
+  "checkEveryHours": 12,
+  "testServerPort": 8787
+}

@@ -1,0 +1,101 @@
+{
+ "samples": 282660,
+ "train": 211995,
+ "test": 70665,
+ "train_days": 21,
+ "days": 28,
+ "rain_days": [
+  1,
+  2,
+  17,
+  20
+ ],
+ "metrics": {
+  "5": {
+   "mae_tree": 2.237,
+   "mae_persistence": 2.612,
+   "leaves": 140,
+   "depth": 8,
+   "top_features": [
+    [
+     "hour",
+     0.265
+    ],
+    [
+     "free",
+     0.199
+    ],
+    [
+     "d5_frac",
+     0.148
+    ],
+    [
+     "d15_frac",
+     0.087
+    ],
+    [
+     "d10_frac",
+     0.063
+    ]
+   ]
+  },
+  "10": {
+   "mae_tree": 3.139,
+   "mae_persistence": 4.026,
+   "leaves": 131,
+   "depth": 8,
+   "top_features": [
+    [
+     "hour",
+     0.384
+    ],
+    [
+     "free_frac",
+     0.133
+    ],
+    [
+     "free",
+     0.131
+    ],
+    [
+     "d15_frac",
+     0.093
+    ],
+    [
+     "type_street",
+     0.074
+    ]
+   ]
+  },
+  "15": {
+   "mae_tree": 3.697,
+   "mae_persistence": 5.323,
+   "leaves": 136,
+   "depth": 8,
+   "top_features": [
+    [
+     "hour",
+     0.441
+    ],
+    [
+     "free_frac",
+     0.116
+    ],
+    [
+     "d15_frac",
+     0.114
+    ],
+    [
+     "free",
+     0.111
+    ],
+    [
+     "type_street",
+     0.069
+    ]
+   ]
+  }
+ },
+ "seconds": 4.2,
+ "python": "3.14.9"
+}
