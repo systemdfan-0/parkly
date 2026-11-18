@@ -43,6 +43,10 @@ class VectorBase extends L.Layer {
     map.on('move zoom viewreset', this.sync, this);
     map.on('resize', this.resize, this);
     map.on('zoomanim', this.anim, this);
+    // первый кадр: поставить холст на место и подогнать размер, не дожидаясь, пока карту сдвинут
+    this.place(map);
+    this.gl.once('load', () => this.resize());
+    requestAnimationFrame(() => this.resize());
     return this;
   }
   onRemove(map: L.Map) {
