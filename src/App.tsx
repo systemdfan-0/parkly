@@ -18,6 +18,7 @@ import { CatalogDetail, CatalogResults, CityView, Coverage, useCatalogResult } f
 import { UpdateScreen, UpdateBanner } from './components/UpdateScreen';
 import { EventDemo } from './components/EventDemo';
 import { AIScreen } from './components/AIScreen';
+import { DemoPay, demoPayState } from './components/Kaspi';
 import { useUpdates } from './updates/store';
 import { usePin } from './pinStore';
 import { useKb } from './mapState';
@@ -56,6 +57,7 @@ export default function App() {
   const [method, setMethod] = useState(false);
   const [coverage, setCoverage] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [demoPay, setDemoPay] = useState<{ name: string; fee: string } | null>(null);
   const [pinOpen, setPinOpen] = useState(false);
   const updScreen = useUpdates((s) => s.screen);
   const kb = useKb();
@@ -93,7 +95,12 @@ export default function App() {
     if (updScreen) useUpdates.getState().closeScreen();
     else if (confirmOpen) {
       setConfirmOpen(false);
+      // окно закрылось — таймер оплаты в нём погашен (usePayAttempt), брони и чека не будет
       if (!confirmState.done) useStore.getState().pushNotice({ kind: 'info', title: 'Оплата отменена', text: 'Бронь не создана, деньги не списаны.' });
+    }
+    else if (demoPay) {
+      setDemoPay(null);
+      if (!demoPayState.done) useStore.getState().pushNotice({ kind: 'info', title: 'Оплата отменена', text: 'Деньги не списаны, чека нет.' });
     }
     else if (coverage) setCoverage(false);
     else if (aiScreen) setAiScreen(false);
@@ -155,7 +162,7 @@ export default function App() {
   if (tab === 'trips') content = <Trips />;
   else if (tab === 'saved') content = <Saved />;
   else if (pinOpen) content = <Pin onClose={() => setPinOpen(false)} onShow={showFromPin} />;
-  else if (isCatalogId(selectedId)) content = <CatalogDetail id={selectedId} onBack={() => selectLot(null)} />;
+  else if (isCatalogId(selectedId)) content = <CatalogDetail id={selectedId} onBack={() => selectLot(null)} onDemoPay={setDemoPay} />;
   else if (selected) content = <LotDetail o={selected} onBack={() => selectLot(null)} onBook={() => setConfirmOpen(true)} onMethod={() => setMethod(true)} />;
   else if (destination?.kind === 'city') content = <CityView place={destination} />;
   else if (demoResults) content = <><Results results={demoResults} /><CatalogResults place={destination!} r={cat.r} state={cat.state} compact /></>;
@@ -208,6 +215,7 @@ export default function App() {
       {method && <Method onClose={() => setMethod(false)} />}
       {coverage && <Coverage onClose={() => setCoverage(false)} />}
       {confirmOpen && selected && <Confirm o={selected} onClose={() => setConfirmOpen(false)} />}
+      {demoPay && <DemoPay name={demoPay.name} fee={demoPay.fee} onClose={() => setDemoPay(null)} />}
     </div>
   );
 }

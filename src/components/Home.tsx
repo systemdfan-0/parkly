@@ -23,7 +23,7 @@ export function Home({ onDemo, onCoverage, onAsk, onEvent, onAI, onTry }: { onDe
     <div className="home">
       <button className="try" onClick={onTry}>
         <span className="try__play" aria-hidden="true">▶</span>
-        <span><b>Попробовать за 1 нажатие</b><small>Пин подберёт парковку у Dostyk Plaza → откройте её → маршрут и демооплата</small></span>
+        <span><b>Попробовать за 1 нажатие</b><small>Пин подберёт парковку у Dostyk Plaza → откройте её → маршрут и бронь с оплатой</small></span>
       </button>
       <h1 className="slogan">Меньше кругов по городу — больше времени на жизнь</h1>
       <p className="home__lead">Скажите, куда едете, или <button className="link" onClick={onAsk}>напишите Пину</button> своими словами.</p>

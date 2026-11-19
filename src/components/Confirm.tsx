@@ -7,9 +7,10 @@ import { tenge } from '../engine/pricing';
 import { fmtTime, fmtDur, fmtDate } from '../engine/time';
 import { Modal } from './Modal';
 import { Icon } from './Icon';
+import { KaspiSheet, usePayAttempt } from './Kaspi';
 
-/** Для кнопки «Назад»: завершена ли бронь (иначе «Назад» = отмена оплаты). */
-export const confirmState = { done: false };
+/** Для кнопки «Назад»: завершена ли бронь и идёт ли сейчас «Оплачиваю…» (иначе «Назад» = отмена оплаты). */
+export const confirmState = { done: false, paying: false };
 
 export function Confirm({ o, onClose }: { o: Option; onClose: () => void }) {
   const book = useStore((s) => s.book);
@@ -21,41 +22,26 @@ export function Confirm({ o, onClose }: { o: Option; onClose: () => void }) {
   const [err, setErr] = useState<string | null>(null);
   const total = o.price.total;
   const [pay, setPay] = useState<'kaspi' | 'onsite'>(total > 0 ? 'kaspi' : 'onsite');
-  // шаг оплаты Kaspi (демо): подтверждение → «оплачиваю…» → бронь
-  const [kaspi, setKaspi] = useState<'off' | 'ask' | 'paying'>('off');
+  // шаг оплаты Kaspi (демо): подтверждение → «оплачиваю…» → бронь. Закрыли окно — таймер гаснет, брони нет.
+  const [kaspi, setKaspi] = useState(false);
+  const p = usePayAttempt();
+  confirmState.paying = p.paying;
 
   const confirm = () => {
     const r = book({ lotId: o.lot.id, destName: destination?.name ?? o.lot.short, arriveAt: o.eta, durationMin: o.durationMin, pay });
-    if (typeof r === 'string') { setErr(r); setKaspi('off'); return; }
+    if (typeof r === 'string') { setErr(r); setKaspi(false); return; }
     setDone(r);
     confirmState.done = true;
     pushNotice({ kind: 'success', title: r.paid ? 'Оплачено через Kaspi (демо)' : 'Демо-бронь подтверждена', text: `${o.lot.short}, код ${r.code}${r.paid ? `, ${tenge(r.paid.amount)}` : ''}` });
   };
-  const start = () => { if (pay === 'kaspi' && total > 0) setKaspi('ask'); else confirm(); };
-  const payKaspi = () => { setKaspi('paying'); setTimeout(confirm, 1400); };
+  const start = () => { if (pay === 'kaspi' && total > 0) setKaspi(true); else confirm(); };
+  const cancelPay = () => { if (p.cancel()) pushNotice({ kind: 'info', title: 'Оплата отменена', text: 'Деньги не списаны, бронь не создана.' }); };
 
-  if (kaspi !== 'off' && !done) {
+  if (kaspi && !done) {
     return (
-      <Modal onClose={() => kaspi === 'ask' && setKaspi('off')} label="Оплата через Kaspi (демо)">
-        <div className="kaspi">
-          <p className="kaspi__tag">Kaspi · демо-оплата</p>
-          <h2>{tenge(total)}</h2>
-          <p className="muted">Parkly · {o.lot.name}, {fmtDur(o.durationMin)}</p>
-          <ul className="kaspi__steps small">
-            <li>В рабочей версии здесь откроется приложение Kaspi.kz с готовым счётом.</li>
-            <li>Подтверждаете оплату в Kaspi — бронь закрепляется, чек приходит в «Брони».</li>
-          </ul>
-          <p className="muted small"><Icon name="info" size={14} /> Демо: деньги не списываются, данные карты и телефона не запрашиваются.</p>
-          {kaspi === 'ask' ? (
-            <div className="row">
-              <button className="btn btn--ghost" onClick={() => setKaspi('off')}>Назад</button>
-              <button className="btn btn--kaspi btn--grow" onClick={payKaspi}>Оплатить {tenge(total)}</button>
-            </div>
-          ) : (
-            <div className="kaspi__wait" role="status"><span className="spin" /> Оплачиваю…</div>
-          )}
-        </div>
-      </Modal>
+      <KaspiSheet amount={total} sub={`Parkly · ${o.lot.name}, ${fmtDur(o.durationMin)}`} paying={p.paying}
+        steps={['В рабочей версии здесь откроется приложение Kaspi.kz с готовым счётом.', 'Подтверждаете оплату в Kaspi — бронь закрепляется, чек приходит в «Брони».']}
+        onPay={() => p.pay(confirm)} onBack={() => setKaspi(false)} onCancel={cancelPay} />
     );
   }
 

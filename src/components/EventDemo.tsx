@@ -1,8 +1,8 @@
 // Экран демо «После мероприятия» (СИМУЛЯЦИЯ): один и тот же поток машин в двух режимах на одном экране.
-import { useMemo, useState } from 'react';
-import { compareEvent, eventLevels, DEFAULT_EVENT, EVENT_LOTS, type ModeResult } from '../engine/event';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { compareEvent, eventLevels, DEFAULT_EVENT, EVENT_LOTS, EVENT_START, type ModeResult } from '../engine/event';
+import { EVENT_TRIAL_COUNT, type compareEventTrials } from '../engine/eventTrials';
 import { fmtTime } from '../engine/time';
-import { EVENT_START } from '../engine/event';
 import { Modal } from './Modal';
 import { PinAvatar } from './Pin';
 
@@ -26,6 +26,80 @@ function Metrics({ a, b }: { a: ModeResult; b: ModeResult }) {
         ))}
       </tbody>
     </table>
+  );
+}
+
+type Trials = ReturnType<typeof compareEventTrials>;
+
+function EventTrialsPanel({ cars, onInspect }: { cars: number; onInspect: (seed: number) => void }) {
+  const [result, setResult] = useState<Trials | null>(null);
+  const [running, setRunning] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const worker = useRef<Worker | null>(null);
+  useEffect(() => () => worker.current?.terminate(), []);
+
+  function run() {
+    if (worker.current) return;
+    setFailed(false);
+    setRunning(true);
+    function finish() {
+      worker.current?.terminate();
+      worker.current = null;
+      setRunning(false);
+    }
+    try {
+      const current = new Worker(new URL('../engine/eventTrials.worker.ts', import.meta.url), { type: 'module' });
+      worker.current = current;
+      current.onmessage = (event: MessageEvent<Trials>) => {
+        setResult(event.data);
+        finish();
+      };
+      current.onerror = () => {
+        setFailed(true);
+        finish();
+      };
+      current.postMessage(cars);
+    } catch {
+      setFailed(true);
+      finish();
+    }
+  }
+
+  const walk = (minutes: number | null) => minutes === null ? '—' : f1(minutes);
+  const worseFull = result?.hardest && result.hardest.fullDelta > 0 ? result.hardest : null;
+  const worseCase = worseFull ?? result?.worseParking;
+  return (
+    <section className="evt__trials" aria-label="Проверка на серии потоков" aria-busy={running}>
+      <h3>Сравнение на {EVENT_TRIAL_COUNT} потоках</h3>
+      <p className="muted small">В каждом потоке {cars} водителей. Оба режима получают одинаковые условия. Номера потоков фиксированы, от 1 до {EVENT_TRIAL_COUNT}.</p>
+      {result ? (
+        <>
+          <div className="evt__trialhero" role="status">
+            <b className={result.b.fullShare < result.a.fullShare ? 'good' : result.b.fullShare > result.a.fullShare ? 'bad' : ''}>
+              {f1(result.a.fullShare * 100)}% → {f1(result.b.fullShare * 100)}%
+            </b>
+            <span>Доля приездов на полную парковку</span>
+            <span className="muted small">{result.a.full} из {result.a.drove} → {result.b.full} из {result.b.drove}</span>
+          </div>
+          <p className="small">Меньше приездов на полную в <b>{result.better}</b> из {EVENT_TRIAL_COUNT} потоков. Без изменений <b>{result.same}</b>, хуже <b>{result.worse}</b>.</p>
+          <dl className="evt__trialcost">
+            <dt>Пешком после парковки, мин</dt><dd>{walk(result.a.avgWalk)} → {walk(result.b.avgWalk)}</dd>
+            <dt>Так и не встали рядом</dt><dd>{result.a.leftArea} → {result.b.leftArea}</dd>
+          </dl>
+          <p className="muted small">Не нашли место чаще в {result.moreLeft} из {EVENT_TRIAL_COUNT} потоков.</p>
+          {worseCase && (
+            <button className="btn btn--ghost btn--sm" onClick={() => onInspect(worseCase.seed)}>
+              Поток №{worseCase.seed} · {worseFull ? 'больше приехали на полную' : 'больше водителей без места'}
+            </button>
+          )}
+        </>
+      ) : (
+        <button className="btn btn--full" disabled={running} onClick={run}>
+          {running ? 'Считаем оба режима…' : `Проверить на ${EVENT_TRIAL_COUNT} потоках`}
+        </button>
+      )}
+      {failed && <p className="small" role="alert">Расчёт прервался. Можно запустить снова.</p>}
+    </section>
   );
 }
 
@@ -57,8 +131,8 @@ function Lots({ a, b }: { a: ModeResult; b: ModeResult }) {
 export function EventDemo({ onClose }: { onClose: () => void }) {
   const [cars, setCars] = useState(DEFAULT_EVENT.cars);
   const [seed, setSeed] = useState(DEFAULT_EVENT.seed);
-  const s = { ...DEFAULT_EVENT, cars, seed };
-  const c = useMemo(() => compareEvent(s), [cars, seed]); // eslint-disable-line react-hooks/exhaustive-deps
+  const selectedFlow = useRef<HTMLHeadingElement>(null);
+  const c = useMemo(() => compareEvent({ ...DEFAULT_EVENT, cars, seed }), [cars, seed]);
   const levels = useMemo(() => eventLevels({ ...DEFAULT_EVENT, seed }), [seed]);
   return (
     <Modal onClose={onClose} label="После мероприятия — симуляция" wide>
@@ -87,6 +161,12 @@ export function EventDemo({ onClose }: { onClose: () => void }) {
           <p><b>С учётом выбравших</b> — тот же прогноз, но из свободных мест вычитаются машины, которые уже выбрали эту парковку и приедут раньше; отмена поездки возвращает место.</p>
         </div>
 
+        <EventTrialsPanel key={cars} cars={cars} onInspect={(nextSeed) => {
+          setSeed(nextSeed);
+          selectedFlow.current?.focus();
+        }} />
+
+        <h3 ref={selectedFlow} tabIndex={-1}>Итог потока №{seed}</h3>
         <Metrics a={c.a} b={c.b} />
 
         {c.pin && (

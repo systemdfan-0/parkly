@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { receiptNo } from './engine/payment';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { DESTINATIONS, LOTS, LOT_BY_ID, ORIGINS, destToPlace, type Place } from './data/places';
 import { freeNow, stepOcc, reservedAt, isOpenAt, type Booking, type Rng } from './engine/model';
@@ -222,7 +223,7 @@ export const useStore = create<State>()(
         const price = priceFor(lot, arriveAt, durationMin).total;
         const b: Booking = { id: uid(), code: code(), lotId, destName, createdAt: s.sim.now, arriveAt, endAt: arriveAt + durationMin * MIN,
           durationMin, price, status: 'active',
-          ...(pay === 'kaspi' && price > 0 ? { paid: { via: 'kaspi' as const, amount: price, receipt: `PK-${code()}${Math.floor(Math.random() * 900 + 100)}`, at: s.sim.now } } : {}) };
+          ...(pay === 'kaspi' && price > 0 ? { paid: { via: 'kaspi' as const, amount: price, receipt: receiptNo(), at: s.sim.now } } : {}) };
         set({ bookings: [b, ...s.bookings], watches: s.watches.filter((w) => w !== lotId) });
         return b;
       },

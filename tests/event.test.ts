@@ -1,8 +1,28 @@
 // Демо «После мероприятия»: повторяемость, одинаковый поток в двух режимах, отмена освобождает ожидаемую ёмкость.
 import { describe, expect, test } from 'vitest';
 import { compareEvent, DEFAULT_EVENT, expectedBefore, makeDrivers, simulateEvent, eventLevels } from '../src/engine/event';
+import { compareEventTrials, EVENT_TRIAL_COUNT } from '../src/engine/eventTrials';
 
 describe('«После мероприятия» (симуляция)', () => {
+  test('серия считает итоги по всем фиксированным потокам и открывает воспроизводимый неблагоприятный пример', () => {
+    const totals = compareEventTrials(DEFAULT_EVENT.cars);
+    const pairs = Array.from({ length: EVENT_TRIAL_COUNT }, (_, index) => compareEvent({ ...DEFAULT_EVENT, seed: index + 1 }));
+    expect(totals.better + totals.same + totals.worse).toBe(EVENT_TRIAL_COUNT);
+    expect(totals.better).toBe(pairs.filter(({ a, b }) => a.fullShare > b.fullShare).length);
+    expect(totals.moreLeft).toBe(pairs.filter(({ a, b }) => b.leftArea > a.leftArea).length);
+    for (const mode of ['a', 'b'] as const) {
+      const flew = pairs.flatMap((pair) => pair[mode].drivers.filter((driver) => driver.choice && !driver.cancels));
+      const parked = flew.filter((driver) => driver.parkedAt);
+      const walkTotal = pairs.reduce((sum, pair) => sum + pair[mode].avgWalk * (pair[mode].chose - pair[mode].leftArea), 0);
+      expect(totals[mode].drove).toBe(flew.length);
+      expect(totals[mode].full).toBe(flew.filter((driver) => driver.arrivedFull).length);
+      expect(totals[mode].leftArea).toBe(flew.length - parked.length);
+      expect(totals[mode].avgWalk).toBeCloseTo(walkTotal / parked.length);
+    }
+    expect(totals.hardest?.fullDelta).toBe(Math.max(...pairs.map(({ a, b }) => b.fullShare - a.fullShare)));
+    expect(totals.worseParking?.extra).toBe(Math.max(...pairs.map(({ a, b }) => b.leftArea - a.leftArea)));
+  });
+
   test('повторный запуск с теми же настройками даёт тот же результат', () => {
     const a = compareEvent(DEFAULT_EVENT), b = compareEvent({ ...DEFAULT_EVENT });
     expect(JSON.stringify(b)).toBe(JSON.stringify(a));

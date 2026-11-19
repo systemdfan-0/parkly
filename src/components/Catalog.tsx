@@ -5,6 +5,8 @@ import { catalogLot, loadIndex, catalogNear, indexSync, distM, type CatalogIndex
 import { catalogFor, suitable, feeText, accessText, capText, lotTitle, NO_DATA, CAT_KIND_LABEL, type CatOption, type CatResult } from '../catalog/rank';
 import { fmtDist } from '../engine/geo';
 import { tenge } from '../engine/pricing';
+import { fmtDur } from '../engine/time';
+import { DEMO_PAY } from '../engine/payment';
 import { useMap } from '../mapState';
 import { Modal } from './Modal';
 import { Icon } from './Icon';
@@ -127,7 +129,7 @@ export function CatalogResults({ place, r, state, compact }: { place: Place; r: 
   );
 }
 
-export function CatalogDetail({ id, onBack }: { id: string; onBack: () => void }) {
+export function CatalogDetail({ id, onBack, onDemoPay }: { id: string; onBack: () => void; onDemoPay: (p: { name: string; fee: string }) => void }) {
   const destination = useStore((s) => s.destination);
   const [lot, setLot] = useState<CatalogLot | null>(catalogLot(id));
   const [cam, setCam] = useState(false);
@@ -169,6 +171,10 @@ export function CatalogDetail({ id, onBack }: { id: string; onBack: () => void }
       </div>
       {lot.access === 'private' && <div className="banner banner--warn"><Icon name="info" size={18} /><span>В OSM отмечена как частная: въезд по пропуску. В подборе Пин ставит её ниже и предупреждает.</span></div>}
       <MeasurementLine lotId={lot.id} />
+      <div>
+        <button className="btn btn--ghost btn--full" onClick={() => onDemoPay({ name: lotTitle(lot), fee: feeText(lot) })}>Попробовать демооплату</button>
+        <p className="muted small">Тестовый платёж {tenge(DEMO_PAY.amount)} за {fmtDur(DEMO_PAY.durationMin)}, без списания и брони.</p>
+      </div>
       <RoutePanel lotId={lot.id} lot={{ lat: lot.lat, lon: lot.lon, entr: lot.entr }} dest={destination} />
       <dl className="facts">
         {rows.map(([k, v]) => <div key={k}><dt>{k}</dt><dd className={v === NO_DATA ? 'nodata' : ''}>{v}</dd></div>)}

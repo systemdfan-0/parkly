@@ -645,6 +645,15 @@ code { font-size: 12.5px; background: var(--asphalt-deep); padding: 1px 5px; bor
 .evt__slider { display: grid; gap: 6px; }
 .evt__slider input { width: 100%; accent-color: #3DDBB0; }
 .evt__modes { display: grid; gap: 4px; }
+.evt__trials { min-width: 0; display: grid; gap: 10px; padding: 14px; background: var(--asphalt-2); border: 1px solid var(--line); border-radius: 14px; }
+.evt__trials h3, .evt__trials p { margin: 0; }
+.evt__trials .btn { white-space: normal; }
+.evt__trialhero { display: grid; gap: 2px; }
+.evt__trialhero > b { font: 700 clamp(19px, 5.8vw, 28px)/1.2 var(--f-display); }
+.evt__trialhero .good { color: #6FE3B5; }
+.evt__trialhero .bad { color: #FF9C9C; }
+.evt__trialcost { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 7px 10px; font-size: 13px; margin: 0; }
+.evt__trialcost dd { margin: 0; font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; }
 .evt__table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 .evt__table th, .evt__table td { padding: 7px 6px; border-bottom: 1px solid var(--line); text-align: left; font-weight: 500; }
 .evt__table thead th { color: var(--muted); font-size: 12px; font-weight: 600; }

@@ -115,6 +115,9 @@ describe('Пин: вопросы не про подбор', () => {
     expect(b.text).toMatch(/место, время и бюджет/);
     const c = await ask('расскажи анекдот');
     expect(sentences(c.text)).toBeLessThanOrEqual(2);
+    expect((await ask('Пошёл нахуй')).text).toMatch(/место, время и бюджет/);
+    expect((await ask('Кто такой Обама?')).text).toMatch(/только данные о парковках/);
+    expect((await ask('Кто такой Пин?')).text).toMatch(/помощник/i);
   });
 
   test('короткие «спасибо», «рахмет», «сәлем» — не города и не кафе; «помоги найти…» — подбор', async () => {
