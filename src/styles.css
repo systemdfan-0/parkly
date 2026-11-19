@@ -681,3 +681,23 @@ code { font-size: 12.5px; background: var(--asphalt-deep); padding: 1px 5px; bor
 .tag--on { background: rgba(61, 219, 176, .16); color: #3DDBB0; }
 .pinbar__mic.is-on { background: #FF6B6B; animation: micpulse 1.1s infinite; }
 @keyframes micpulse { 0% { box-shadow: 0 0 0 0 rgba(255, 107, 107, .55); } 100% { box-shadow: 0 0 0 14px rgba(255, 107, 107, 0); } }
+
+/* демо-оплата Kaspi */
+.btn--kaspi { background: #EE3B32; color: #fff; }
+.btn--kaspi:hover { background: #D9302A; }
+.paychoice { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0 6px; }
+.paychoice button { display: flex; gap: 10px; align-items: center; text-align: left; padding: 12px; border-radius: 14px; background: #262B33; border: 2px solid #343A44; color: inherit; font: inherit; }
+.paychoice button.on { border-color: #FFD23F; }
+.paychoice button b { display: block; font-size: 15px; }
+.paychoice button small { display: block; color: #9AA3AE; font-size: 12px; }
+.paychoice__k { flex: none; width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; background: #EE3B32; color: #fff; font: 900 18px Unbounded, sans-serif; }
+.paychoice__k--cash { background: #3A404A; }
+.kaspi { display: grid; gap: 10px; text-align: center; }
+.kaspi h2 { font: 800 40px Unbounded, sans-serif; margin: 4px 0; }
+.kaspi__tag { justify-self: center; font: 700 13px Onest, sans-serif; color: #fff; background: #EE3B32; padding: 5px 12px; border-radius: 999px; }
+.kaspi__steps { text-align: left; display: grid; gap: 6px; padding-left: 18px; color: #C9CED6; }
+.kaspi__wait { display: flex; justify-content: center; align-items: center; gap: 10px; padding: 14px; font-weight: 600; }
+.kaspi__wait .spin { width: 22px; height: 22px; border: 3px solid rgba(238, 59, 50, .3); border-top-color: #EE3B32; border-radius: 50%; animation: kspin .8s linear infinite; }
+@keyframes kspin { to { transform: rotate(360deg); } }
+.paidline { display: flex; gap: 6px; align-items: center; justify-content: center; color: #3DDBB0; font-weight: 600; }
+.paid { font-style: normal; color: #3DDBB0; }

@@ -71,7 +71,7 @@ interface State {
   setTab: (t: Tab) => void;
   toggleFavorite: (id: string) => void;
   toggleWatch: (id: string) => void;
-  book: (args: { lotId: string; destName: string; arriveAt: number; durationMin: number }) => Booking | string;
+  book: (args: { lotId: string; destName: string; arriveAt: number; durationMin: number; pay?: 'kaspi' | 'onsite' }) => Booking | string;
   cancelBooking: (id: string) => void;
   finishBooking: (id: string) => void;
   pushNotice: (n: Omit<Notice, 'id' | 'at'>) => void;
@@ -212,7 +212,7 @@ export const useStore = create<State>()(
       toggleFavorite: (id) => set((s) => ({ favorites: s.favorites.includes(id) ? s.favorites.filter((x) => x !== id) : [...s.favorites, id] })),
       toggleWatch: (id) => set((s) => ({ watches: s.watches.includes(id) ? s.watches.filter((x) => x !== id) : [...s.watches, id] })),
 
-      book: ({ lotId, destName, arriveAt, durationMin }) => {
+      book: ({ lotId, destName, arriveAt, durationMin, pay }) => {
         const s = get();
         const lot = LOT_BY_ID[lotId];
         if (!lot.bookable) return 'На этой парковке нет брони — оплата на месте.';
@@ -221,12 +221,14 @@ export const useStore = create<State>()(
         if (s.bookings.some((b) => b.lotId === lotId && b.status === 'active')) return 'У вас уже есть бронь на этой парковке.';
         const price = priceFor(lot, arriveAt, durationMin).total;
         const b: Booking = { id: uid(), code: code(), lotId, destName, createdAt: s.sim.now, arriveAt, endAt: arriveAt + durationMin * MIN,
-          durationMin, price, status: 'active' };
+          durationMin, price, status: 'active',
+          ...(pay === 'kaspi' && price > 0 ? { paid: { via: 'kaspi' as const, amount: price, receipt: `PK-${code()}${Math.floor(Math.random() * 900 + 100)}`, at: s.sim.now } } : {}) };
         set({ bookings: [b, ...s.bookings], watches: s.watches.filter((w) => w !== lotId) });
         return b;
       },
       cancelBooking: (id) => set((s) => ({
-        bookings: s.bookings.map((b) => (b.id === id && b.status === 'active' ? { ...b, status: 'cancelled', closedAt: s.sim.now, price: 0 } : b)),
+        // отмена до приезда: демо-оплата Kaspi «возвращается» — сумма брони 0
+        bookings: s.bookings.map((b) => (b.id === id && b.status === 'active' ? { ...b, status: 'cancelled', closedAt: s.sim.now, price: 0, ...(b.paid ? { paid: { ...b.paid, amount: 0 } } : {}) } : b)),
       })),
       finishBooking: (id) => set((s) => ({
         bookings: s.bookings.map((b) => {

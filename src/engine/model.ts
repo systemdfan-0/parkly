@@ -113,6 +113,8 @@ export interface Booking {
   status: 'active' | 'cancelled' | 'completed';
   closedAt?: number;
   seeded?: boolean;
+  /** Демо-оплата: способ, сумма, номер чека. Деньги не списываются. */
+  paid?: { via: 'kaspi'; amount: number; receipt: string; at: number };
 }
 
 export function reservedAt(lotId: string, ms: number, bookings: Booking[]): number {

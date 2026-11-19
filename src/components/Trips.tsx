@@ -41,10 +41,10 @@ export function Trips() {
               <b>{lot.name}</b>
               <span className="muted">{b.destName}</span>
               <span>{before ? `Ждём к ${fmtTime(b.arriveAt)} — место за вами` : `Стоянка идёт до ${fmtTime(b.endAt)}`}</span>
-              <span className="trip__meta">{fmtDur(b.durationMin)}, {b.price ? tenge(b.price) : 'бесплатно'}</span>
+              <span className="trip__meta">{fmtDur(b.durationMin)}, {b.price ? tenge(b.price) : 'бесплатно'}{b.paid ? <> · <em className="paid">оплачено Kaspi (демо), чек {b.paid.receipt}</em></> : b.price ? ' · оплата на месте' : ''}</span>
             </div>
             {before ? (
-              <button className="btn btn--ghost btn--sm" onClick={() => { cancel(b.id); pushNotice({ kind: 'info', title: 'Бронь отменена', text: `${lot.short}: место снова свободно, деньги не списаны` }); }}>
+              <button className="btn btn--ghost btn--sm" onClick={() => { cancel(b.id); pushNotice({ kind: 'info', title: 'Бронь отменена', text: `${lot.short}: место снова свободно${b.paid ? ', демо-оплата Kaspi возвращена' : ', деньги не списаны'}` }); }}>
                 Отменить бесплатно
               </button>
             ) : (

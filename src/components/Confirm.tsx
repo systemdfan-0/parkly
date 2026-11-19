@@ -15,13 +15,44 @@ export function Confirm({ o, onClose }: { o: Option; onClose: () => void }) {
   const pushNotice = useStore((s) => s.pushNotice);
   const [done, setDone] = useState<Booking | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const total = o.price.total;
+  const [pay, setPay] = useState<'kaspi' | 'onsite'>(total > 0 ? 'kaspi' : 'onsite');
+  // шаг оплаты Kaspi (демо): подтверждение → «оплачиваю…» → бронь
+  const [kaspi, setKaspi] = useState<'off' | 'ask' | 'paying'>('off');
 
   const confirm = () => {
-    const r = book({ lotId: o.lot.id, destName: destination?.name ?? o.lot.short, arriveAt: o.eta, durationMin: o.durationMin });
-    if (typeof r === 'string') { setErr(r); return; }
+    const r = book({ lotId: o.lot.id, destName: destination?.name ?? o.lot.short, arriveAt: o.eta, durationMin: o.durationMin, pay });
+    if (typeof r === 'string') { setErr(r); setKaspi('off'); return; }
     setDone(r);
-    pushNotice({ kind: 'success', title: 'Демо-бронь подтверждена', text: `${o.lot.short}, код ${r.code}` });
+    pushNotice({ kind: 'success', title: r.paid ? 'Оплачено через Kaspi (демо)' : 'Демо-бронь подтверждена', text: `${o.lot.short}, код ${r.code}${r.paid ? `, ${tenge(r.paid.amount)}` : ''}` });
   };
+  const start = () => { if (pay === 'kaspi' && total > 0) setKaspi('ask'); else confirm(); };
+  const payKaspi = () => { setKaspi('paying'); setTimeout(confirm, 1400); };
+
+  if (kaspi !== 'off' && !done) {
+    return (
+      <Modal onClose={() => kaspi === 'ask' && setKaspi('off')} label="Оплата через Kaspi (демо)">
+        <div className="kaspi">
+          <p className="kaspi__tag">Kaspi · демо-оплата</p>
+          <h2>{tenge(total)}</h2>
+          <p className="muted">Parkly · {o.lot.name}, {fmtDur(o.durationMin)}</p>
+          <ul className="kaspi__steps small">
+            <li>В рабочей версии здесь откроется приложение Kaspi.kz с готовым счётом.</li>
+            <li>Подтверждаете оплату в Kaspi — бронь закрепляется, чек приходит в «Брони».</li>
+          </ul>
+          <p className="muted small"><Icon name="info" size={14} /> Демо: деньги не списываются, данные карты и телефона не запрашиваются.</p>
+          {kaspi === 'ask' ? (
+            <div className="row">
+              <button className="btn btn--ghost" onClick={() => setKaspi('off')}>Назад</button>
+              <button className="btn btn--kaspi btn--grow" onClick={payKaspi}>Оплатить {tenge(total)}</button>
+            </div>
+          ) : (
+            <div className="kaspi__wait" role="status"><span className="spin" /> Оплачиваю…</div>
+          )}
+        </div>
+      </Modal>
+    );
+  }
 
   if (done) {
     return (
@@ -30,7 +61,10 @@ export function Confirm({ o, onClose }: { o: Option; onClose: () => void }) {
           <div className="success__bay" aria-hidden="true"><b>{done.code}</b></div>
           <h2>Место за вами</h2>
           <p>{o.lot.name}. Ждём к {fmtTime(done.arriveAt)}, стоянка до {fmtTime(done.endAt)}. Покажите код на въезде.</p>
-          <p className="muted">Отменить бесплатно можно до {fmtTime(done.arriveAt)} в разделе «Брони».</p>
+          {done.paid
+            ? <p className="paidline"><Icon name="check" size={16} /> Оплачено через Kaspi (демо) · {tenge(done.paid.amount)} · чек {done.paid.receipt}</p>
+            : done.price > 0 && <p className="muted small">Оплата на месте при въезде.</p>}
+          <p className="muted">Отменить бесплатно можно до {fmtTime(done.arriveAt)} в разделе «Брони»{done.paid ? ' — демо-оплата вернётся' : ''}.</p>
           <div className="row">
             <button className="btn btn--ghost btn--grow" onClick={() => { setTab('trips'); onClose(); }}>Мои брони</button>
             <button className="btn btn--primary btn--grow" onClick={onClose}>Готово</button>
@@ -52,11 +86,23 @@ export function Confirm({ o, onClose }: { o: Option; onClose: () => void }) {
         <div><dt>Свободно</dt><dd>сейчас {o.freeNow}, к приезду {rangeText(o.fc)}</dd></div>
         <div className="summary__total"><dt>Итого</dt><dd>{o.price.total ? tenge(o.price.total) : 'Бесплатно'}</dd></div>
       </dl>
+      {total > 0 && (
+        <div className="paychoice" role="radiogroup" aria-label="Способ оплаты">
+          <button role="radio" aria-checked={pay === 'kaspi'} className={pay === 'kaspi' ? 'on' : ''} onClick={() => setPay('kaspi')}>
+            <span className="paychoice__k">K</span><span><b>Kaspi</b><small>сразу, в одно касание · демо</small></span>
+          </button>
+          <button role="radio" aria-checked={pay === 'onsite'} className={pay === 'onsite' ? 'on' : ''} onClick={() => setPay('onsite')}>
+            <span className="paychoice__k paychoice__k--cash">₸</span><span><b>На месте</b><small>при въезде на парковку</small></span>
+          </button>
+        </div>
+      )}
       <p className="muted small"><Icon name="info" size={14} /> Место закрепляется сразу и ждёт вас до приезда. Демо: деньги не списываются.</p>
       {err && <div className="banner banner--off"><Icon name="info" size={18} /><span>{err}</span></div>}
       <div className="row">
         <button className="btn btn--ghost" onClick={onClose}>Назад</button>
-        <button className="btn btn--primary btn--grow" onClick={confirm} disabled={!!err}>Подтвердить демо-бронь</button>
+        <button className={`btn btn--grow ${pay === 'kaspi' && total > 0 ? 'btn--kaspi' : 'btn--primary'}`} onClick={start} disabled={!!err}>
+          {pay === 'kaspi' && total > 0 ? `Оплатить через Kaspi · ${tenge(total)}` : 'Подтвердить демо-бронь'}
+        </button>
       </div>
     </Modal>
   );
