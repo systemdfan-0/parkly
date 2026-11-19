@@ -1,8 +1,8 @@
 # Покрытие каталога парковок
 
 Источник: OpenStreetMap, выгрузка Geofabrik «Kazakhstan», файл `kazakhstan-latest.osm.pbf`, данные OSM на **2026-11-17 21:24:30** (UTC).
-MD5: `7ea9fb38ecc8ae92e79d0c4d114bcfa4` (сверено с Geofabrik). Лицензия: ODbL 1.0, © участники OpenStreetMap.
-Импорт: 2026-11-18 23:38 UTC. Пересобрать: `npm run catalog`.
+MD5: `7ea9fb38ecc8ae92e79d0c4d114bcfa4` (сверка не выполнена). Лицензия: ODbL 1.0, © участники OpenStreetMap.
+Импорт: 2026-11-19 16:32 UTC. Пересобрать: `npm run catalog`.
 
 Всего парковок: **11486** (точек 1229, полигонов 10257). Гаражные кооперативы исключены: 7.
 

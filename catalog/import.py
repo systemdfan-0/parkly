@@ -71,6 +71,9 @@ POI = {
     ('building', 'commercial'): 'business', ('building', 'office'): 'business', ('building', 'retail'): 'mall',
     ('office', 'government'): 'gov',
 }
+# микрорайоны, кварталы, посёлки и жилые массивы — чтобы находить «Шугыла», «Орбита», «ЖК …»
+AREA_PLACE = {'suburb': 'district', 'quarter': 'district', 'neighbourhood': 'district', 'borough': 'district', 'hamlet': 'hamlet'}
+AREA_CATS = {'district', 'hamlet', 'residential'}
 PLACE_R = {'city': 22_000, 'town': 8_000, 'village': 3_000}  # радиус «принадлежности» к населённому пункту
 NAME_KEYS = ('name:ru', 'name', 'name:kk', 'name:en', 'alt_name', 'old_name', 'short_name', 'alt_name:ru', 'old_name:ru', 'name:kk-Latn')
 
@@ -154,7 +157,7 @@ def parse(pbf):
           .with_locations()
           .with_areas()
           .with_filter(osmium.filter.KeyFilter('amenity', 'place', 'boundary', 'shop', 'tourism', 'leisure',
-                                               'railway', 'aeroway', 'building', 'office')))
+                                               'railway', 'aeroway', 'building', 'office', 'landuse')))
     for o in fp:
         tags = o.tags
         if o.is_node():
@@ -173,7 +176,8 @@ def parse(pbf):
                 regions.append({'osm': ('w' if o.from_way() else 'r') + str(o.orig_id()), 'ru': ru, 'kk': kk, 'en': en,
                                 'geom': g.simplify(0.002)})
                 continue
-            if not (tags.get('amenity') == 'parking' or any((k, tags.get(k)) in POI for k, _ in POI)):
+            if not (tags.get('amenity') == 'parking' or any((k, tags.get(k)) in POI for k, _ in POI)
+                    or (tags.get('name') and (tags.get('place') in AREA_PLACE or tags.get('landuse') == 'residential'))):
                 continue
             try:
                 g = wkb.loads(wkbf.create_multipolygon(o), hex=True)
@@ -220,6 +224,12 @@ def parse(pbf):
             ru, kk, en, alt = names(tags)
             places.append({'osm': oid, 'ru': ru, 'kk': kk, 'en': en, 'alt': alt, 'lat': round(lat, 5), 'lon': round(lon, 5),
                            'place': tags['place'], 'pop': to_int((tags.get('population') or '').replace(' ', ''))})
+            continue
+
+        if tags.get('name') and (tags.get('place') in AREA_PLACE or (tags.get('landuse') == 'residential' and not o.is_node())):
+            ru, kk, en, alt = names(tags)
+            pois.append({'id': oid, 'ru': ru, 'kk': kk, 'en': en, 'alt': alt[:3], 'lat': round(lat, 5), 'lon': round(lon, 5),
+                         'cat': AREA_PLACE.get(tags.get('place'), 'residential')})
             continue
 
         cat = None
@@ -325,7 +335,7 @@ def build(lots, places, pois, regions, excluded, meta):
 
     # только населённые пункты, к которым что-то относится (иначе индекс раздувается деревнями)
     used = Counter(l['city'] for l in lots if l['city'] >= 0)
-    used_poi = Counter(p['city'] for p in pois if p['city'] >= 0)
+    used_poi = Counter(p['city'] for p in pois if p['city'] >= 0 and p['cat'] not in AREA_CATS)
     keep = [i for i, p in enumerate(places) if p['place'] in ('city', 'town') or used[i] or used_poi[i]]
     remap = {old: new for new, old in enumerate(keep)}
     cities = []

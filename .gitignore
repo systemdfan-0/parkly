@@ -10,3 +10,4 @@ Parkly.apk
 release/
 .claude/
 ml/scenarios.csv
+.secrets/

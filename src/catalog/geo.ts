@@ -22,10 +22,12 @@ export const CAT_LABEL: Record<string, string> = {
   mall: 'ТРЦ', shop: 'Магазин', market: 'Рынок', theatre: 'Театр', cinema: 'Кинотеатр', culture: 'Культура', university: 'Вуз',
   hospital: 'Больница', station: 'Вокзал', gov: 'Госучреждение', worship: 'Храм', museum: 'Музей', attraction: 'Достопримечательность',
   hotel: 'Гостиница', stadium: 'Стадион', sport: 'Спорт', park: 'Парк', airport: 'Аэропорт', business: 'Бизнес-центр',
+  district: 'Микрорайон', hamlet: 'Посёлок', residential: 'Жилой массив',
 };
-const CAT_BONUS: Record<string, number> = {
+const AREA = new Set(['district', 'hamlet', 'residential']);
+export const CAT_BONUS: Record<string, number> = {
   mall: 6, airport: 6, theatre: 5, station: 5, stadium: 4, attraction: 4, market: 4, cinema: 3, culture: 3, museum: 3, university: 3,
-  business: 2, hospital: 2, park: 2, sport: 2, hotel: 1, gov: 1, worship: 1, shop: -4,
+  business: 2, hospital: 2, park: 2, sport: 2, hotel: 1, gov: 1, worship: 1, shop: -4, district: 5, residential: 2, hamlet: 0,
 };
 
 export interface GeoHit {
@@ -136,6 +138,13 @@ export function matchPlaces(ix: CatalogIndex, pois: Poi[] | null, qw: string[], 
         if (best < 0.8) { const hi = headMatch(words, k); if (hi >= 0) { best = 0.8; used = new Set([hi]); } }
       }
       if (best < 0.8) continue;
+      // микрорайоны, посёлки, жилые массивы — их тысячи и названия бывают словами («Свободное», «Мир»):
+      // далеко от карты/города берём только почти точное совпадение
+      if (AREA.has(p.cat)) {
+        const ref = opts.city ?? opts.near;
+        const close = ref ? distM(p.lat, p.lon, ref.lat, ref.lon) < 40_000 : false;
+        if (!close && best < 0.99) continue;
+      }
       const c = p.city >= 0 ? ix.cities[p.city] : null;
       const s = coverage(best, used) + (CAT_BONUS[p.cat] ?? 0) + cityOk(p.lat, p.lon, p.city) + nearB(p.lat, p.lon);
       out.push({
@@ -190,4 +199,33 @@ export function byCategory(ix: CatalogIndex, pois: Poi[] | null, cat: string, ci
   const uniq: GeoHit[] = [];
   for (const h of out) { if (!uniq.some((u) => fold(u.place.name) === fold(h.place.name))) uniq.push(h); if (uniq.length >= 3) break; }
   return uniq;
+}
+
+/**
+ * Запрос целиком = название места рядом с картой («Шугыла», «Аксай-4», «Алмагуль»):
+ * берём ближайшее такое место, даже если так же называется посёлок в другой области.
+ * Из одноимённых рядом выигрывает микрорайон/жилой массив, потом — ближайшее.
+ */
+export function exactNear(ix: CatalogIndex, pois: Poi[] | null, text: string, near: { lat: number; lon: number } | null): GeoHit | null {
+  if (!pois || !near) return null;
+  const q = fold(text).replace(/^(мкр|микрораион|жк|жилои массив|в|к|до|еду в|еду к|еду до)\s+/, '');
+  if (q.length < 3) return null;
+  // «в шугылу», «к Алмагулю» — падежное окончание у однословного названия
+  const one = !q.includes(' ') && q.length >= 5;
+  const same = (n: string) => n === q || (one && !n.includes(' ') && n.length >= 5 && n.slice(0, -1) === q.slice(0, -1)) || (one && q.startsWith(n) && q.length - n.length <= 2 && n.length >= 5);
+  let best: { p: Poi; s: number } | null = null;
+  for (const p of pois) {
+    if (![p.ru, p.kk, ...p.alt].some((n) => n && same(fold(n)))) continue;
+    const d = distM(p.lat, p.lon, near.lat, near.lon);
+    if (d > 30_000) continue;
+    const s = (CAT_BONUS[p.cat] ?? 0) * 10_000 - d;
+    if (!best || s > best.s) best = { p, s };
+  }
+  if (!best) return null;
+  const p = best.p, c = p.city >= 0 ? ix.cities[p.city] : null;
+  return {
+    kind: 'poi', city: c, score: 120, used: new Set(tokens(text).map((_, i) => i)),
+    hint: `${CAT_LABEL[p.cat] ?? 'Место'}${c ? ', ' + c.ru : ''}`,
+    place: { id: `poi:${p.i}`, name: p.ru, address: [p.kk && p.kk !== p.ru ? p.kk : '', c?.ru].filter(Boolean).join(' · '), lat: p.lat, lon: p.lon, kind: 'landmark' },
+  };
 }

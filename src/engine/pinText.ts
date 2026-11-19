@@ -3,8 +3,8 @@
 // Короткие уточнения («а поближе?», «тогда до 700») дополняют предыдущий запрос.
 import type { Priority } from './recommend';
 import type { Place } from '../data/places';
-import type { CatalogIndex, City, Poi } from '../catalog/data';
-import { ambiguous, byCategory, matchCities, matchPlaces, type GeoHit } from '../catalog/geo';
+import { distM, type CatalogIndex, type City, type Poi } from '../catalog/data';
+import { ambiguous, byCategory, exactNear, matchCities, matchPlaces, type GeoHit } from '../catalog/geo';
 import { GENERIC_CAT, fold, tokens } from '../catalog/text';
 
 export interface Slots {
@@ -97,6 +97,9 @@ const FOLLOW = /^\s*(а|тогда|и|ещ[её]|лучше|давай|ну|ес
 export function understand(text: string, prev: PinCtx, ix: CatalogIndex, pois: Poi[] | null, near?: { lat: number; lon: number } | null): Understood {
   const slots = extractSlots(text);
   const qw = tokens(text);
+  // «Шугыла», «Аксай-4» — точное название места рядом с картой важнее одноимённого посёлка в другой области
+  const ex = !Object.keys(slots).length ? exactNear(ix, pois, text, near ?? prev.city ?? null) : null;
+  if (ex) return { kind: 'query', followUp: false, changed: ['place'], ctx: { ...EMPTY_CTX({ durationMin: prev.durationMin, priority: prev.priority }), place: ex.place, city: ex.city } };
   // «в Астане», «г. Шымкент», «Астанада» — контекст города
   const ctxIdx = new Set<number>();
   qw.forEach((w, i) => { if (i > 0 && ['в', 'во', 'г', 'город', 'городе', 'из', 'по'].includes(qw[i - 1])) ctxIdx.add(i); if (/(да|де|та|те)$/.test(w) && w.length > 5) ctxIdx.add(i); });
@@ -130,16 +133,20 @@ export function understand(text: string, prev: PinCtx, ix: CatalogIndex, pois: P
 
   const good = hits.filter((h) => h.score >= 80);
   if (good.length) {
-    const amb = city ? null : ambiguous(good, rest);
+    const amb0 = city ? null : ambiguous(good, rest);
+    // «Шугыла» есть в Алматы, Шымкенте и Атырау: если ровно один вариант рядом с картой/прошлым городом — берём его без вопроса
+    const here = near ?? prev.city;
+    const local = amb0 && here ? amb0.filter((h) => distM(h.place.lat, h.place.lon, here.lat, here.lon) < 30_000) : [];
+    const amb = local.length === 1 ? null : amb0;
     const isFollow = FOLLOW.test(text);
     // новое место: условия из прошлого запроса сохраняем только для уточнения «а у …?»
     const base = isFollow ? prev : EMPTY_CTX({ durationMin: prev.durationMin });
     if (amb) {
       const byCity = new Set(amb.map((h) => h.city?.i ?? -1)).size === amb.length;
       return { kind: 'ask-place', ctx: merge(base), options: amb,
-        question: byCity ? `Уточните город: ${listOr(amb.map((h) => h.city?.ru ?? h.hint))}?` : `Какое место: ${listOr(amb.map((h) => `«${h.place.name}»`))}?` };
+        question: byCity ? `Уточните город: ${listOr(amb.map((h) => h.city?.ru ?? h.hint))}?` : `Какое место: ${listOr(amb.map((h) => `«${h.place.name}»${amb.filter((x) => fold(x.place.name) === fold(h.place.name)).length > 1 ? ` (${h.hint.split(',')[0].toLowerCase()})` : ''}`))}?` };
     }
-    const h = good[0];
+    const h = local.length === 1 ? local[0] : good[0];
     return { kind: 'query', followUp: isFollow, changed: ['place', ...changed], ctx: merge({ ...base, place: h.place, city: h.city ?? (h.kind === 'poi' ? null : searchCity ?? null) }) };
   }
 
