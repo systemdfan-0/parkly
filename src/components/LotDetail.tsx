@@ -16,6 +16,7 @@ import { catalogNear } from '../catalog/data';
 import { ParkedHere } from './Car';
 import { MeasurementLine } from './Measurement';
 import { RoutePanel } from './RoutePanel';
+import { WhyML } from './WhyML';
 import { ReportBox } from './Report';
 
 interface Props { o: Option; onBack: () => void; onBook: () => void; onMethod: () => void }
@@ -104,6 +105,7 @@ export function LotDetail({ o, onBack, onBook, onMethod }: Props) {
             {o.fcSource === 'heuristic' && (
               <p className="small muted">До приезда {o.driveMin} мин — дальше 15 минут модель не обучена, поэтому прогноз к приезду считает эвристика потоков.</p>
             )}
+            {o.fcSource === 'ml' && <WhyML lot={lot} now={now} driveMin={o.driveMin} occNow={occ} hist={hist} bookings={bookings} />}
             <p className="block__why">
               {o.trendText ? `Почему так: ${o.trendText}.` : 'Загрузка к приезду почти не изменится.'}
               {o.reserved > 0 && ` Сейчас забронировано через Parkly: ${o.reserved}.`}{' '}

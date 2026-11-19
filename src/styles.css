@@ -704,3 +704,8 @@ code { font-size: 12.5px; background: var(--asphalt-deep); padding: 1px 5px; bor
 .report { margin: 10px 0; display: grid; gap: 8px; }
 .report--on { display: flex; gap: 10px; align-items: center; padding: 10px 12px; border-radius: 14px; background: rgba(255, 156, 59, .12); color: #FFC58A; font-size: 14px; }
 .report--on span { flex: 1; }
+.why { margin: 8px 0; }
+.why__btn { display: inline-flex; gap: 6px; align-items: center; background: rgba(61, 219, 176, .12); color: #3DDBB0; border: 0; border-radius: 10px; padding: 8px 12px; font: 600 14px Onest, sans-serif; }
+.why__body { margin-top: 8px; padding: 12px; border-radius: 14px; background: #1A1E24; display: grid; gap: 8px; }
+.why__steps { padding-left: 20px; display: grid; gap: 4px; font-size: 15px; }
+.why__steps li::marker { color: #3DDBB0; font-weight: 700; }

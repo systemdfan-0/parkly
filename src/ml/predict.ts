@@ -101,3 +101,54 @@ export function pAtLeast(q: number[], k: number): number {
 }
 /** Квантиль уровня level (0..1). */
 export const quantileAt = (q: number[], level: number) => at(q, level);
+
+// ---------- объяснение прогноза: настоящий путь в дереве ----------
+const TYPE_RU: Record<string, string> = {
+  mall: 'ТРЦ', office: 'офисы', market: 'рынок', street: 'уличная парковка', theatre: 'театр', station: 'вокзал',
+  residential: 'жилой район', park: 'парк', university: 'вуз', stadium: 'стадион',
+};
+const hm = (h: number) => { const m = Math.round(h * 60); return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`; };
+const pct = (x: number) => `${Math.round(Math.abs(x) * 100)}%`;
+
+export interface WhyStep { feature: string; text: string }
+/**
+ * Почему дерево на горизонте h дало такой прогноз: условия на пути от корня до листа,
+ * сжатые по признакам (самая узкая граница), — те же сравнения, что делает модель.
+ */
+export function explainAt(lot: Lot, ms: number, r: Recent, h: number): { steps: WhyStep[]; depth: number; delta: number } {
+  const t = M.horizons[String(h)];
+  const x = featureVector(lot.type, lot.capacity, ms, r);
+  const lo: Record<number, number> = {}, hi: Record<number, number> = {};
+  const order: number[] = [];
+  let n = 0, depth = 0;
+  while (t.left[n] !== -1) {
+    const f = t.feature[n], th = t.threshold[n];
+    if (!order.includes(f)) order.push(f);
+    if (Math.fround(x[f]) <= th) { hi[f] = Math.min(hi[f] ?? Infinity, th); n = t.left[n]; }
+    else { lo[f] = Math.max(lo[f] ?? -Infinity, th); n = t.right[n]; }
+    depth++;
+  }
+  const steps: WhyStep[] = [];
+  for (const f of order) {
+    const name = M.features[f], a = lo[f], b = hi[f];
+    let text = '';
+    if (name === 'hour') text = a != null && b != null ? `время ${hm(a)}–${hm(b)}` : a != null ? `позже ${hm(a)}` : `раньше ${hm(b!)}`;
+    else if (name === 'dow') text = 'день недели';
+    else if (name === 'weekend') text = x[f] ? 'выходной' : 'будний день';
+    else if (name === 'capacity') text = a != null ? `больше ${Math.round(a)} мест всего` : `до ${Math.round(b!)} мест всего`;
+    else if (name === 'free') text = a != null && b != null ? `свободно сейчас ${Math.ceil(a)}–${Math.floor(b)}` : a != null ? `свободно сейчас больше ${Math.floor(a)}` : `свободно сейчас не больше ${Math.floor(b!)}`;
+    else if (name === 'free_frac') text = a != null ? `свободно больше ${pct(a)} мест` : b! <= 0.5 ? `свободно меньше ${pct(b!)} мест` : '';
+    else if (/^d(5|10|15)_frac$/.test(name)) {
+      const mins = name.slice(1, name.indexOf('_'));
+      const v = x[f];
+      text = Math.abs(v) < 0.005 ? `за ${mins} мин свободных почти не изменилось` : v < 0 ? `за ${mins} мин заняли ${pct(v)} мест` : `за ${mins} мин освободилось ${pct(v)} мест`;
+    } else if (name.startsWith('type_')) {
+      const ty = name.slice(5);
+      text = x[f] ? `тип парковки: ${TYPE_RU[ty] ?? ty}` : ''; // «не офисы» человеку ничего не говорит
+    }
+    if (text) steps.push({ feature: name, text });
+  }
+  return { steps, depth, delta: t.v[n]! * lot.capacity };
+}
+/** Важность признаков модели на горизонте h (доля, из обучения). */
+export const featureImportance = (h: number): [string, number][] => ((M.metrics as any)[String(h)]?.top_features ?? []) as [string, number][];
