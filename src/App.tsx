@@ -16,6 +16,7 @@ import { Icon } from './components/Icon';
 import { Pin, PinBar } from './components/Pin';
 import { CatalogDetail, CatalogResults, CityView, Coverage, useCatalogResult } from './components/Catalog';
 import { UpdateScreen, UpdateBanner } from './components/UpdateScreen';
+import { EventDemo } from './components/EventDemo';
 import { useUpdates } from './updates/store';
 import { usePin } from './pinStore';
 import { useKb } from './mapState';
@@ -49,6 +50,7 @@ export default function App() {
   const setDestination = useStore((s) => s.setDestination);
   const activeCount = useStore((s) => s.bookings.filter((b) => b.status === 'active').length);
   const [demo, setDemo] = useState(false);
+  const [eventDemo, setEventDemo] = useState(false);
   const [method, setMethod] = useState(false);
   const [coverage, setCoverage] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -89,6 +91,7 @@ export default function App() {
     if (updScreen) useUpdates.getState().closeScreen();
     else if (confirmOpen) setConfirmOpen(false);
     else if (coverage) setCoverage(false);
+    else if (eventDemo) setEventDemo(false);
     else if (demo) setDemo(false);
     else if (method) setMethod(false);
     else if (pinOpen) setPinOpen(false);
@@ -128,7 +131,8 @@ export default function App() {
   const openPin = () => { setPinOpen(true); if (!wide) setSnap('half'); };
   const showFromPin = (r: PinReply) => {
     if (!r.show) return;
-    const ctx = usePin.getState().ctx;
+    // условия именно этого ответа (а не последнего вопроса) — чтобы карточка совпала с тем, о чём говорил Пин
+    const ctx = r.ctx ?? usePin.getState().ctx;
     const st = useStore.getState();
     if (st.destination?.id !== r.show.place.id) st.setDestination(r.show.place);
     st.setPriority(ctx.priority); st.setArriveIn(ctx.arriveIn); st.setDuration(ctx.durationMin); st.setBudget(ctx.budget);
@@ -148,7 +152,7 @@ export default function App() {
   else if (destination?.kind === 'city') content = <CityView place={destination} />;
   else if (demoResults) content = <><Results results={demoResults} /><CatalogResults place={destination!} r={cat.r} state={cat.state} compact /></>;
   else if (destination) content = <CatalogResults place={destination} r={cat.r} state={cat.state} />;
-  else content = <Home onDemo={() => setDemo(true)} onCoverage={() => setCoverage(true)} onAsk={openPin} />;
+  else content = <Home onDemo={() => setDemo(true)} onCoverage={() => setCoverage(true)} onAsk={openPin} onEvent={() => setEventDemo(true)} />;
 
   const tabs = (
     <nav className="tabbar" aria-label="Разделы" style={wide ? undefined : { top: `calc(${H}px - var(--tab-h) - var(--safe-b))` }}>
@@ -190,7 +194,8 @@ export default function App() {
       <Toasts />
       <UpdateBanner />
       {updScreen && <UpdateScreen />}
-      {demo && <DemoPanel onClose={() => setDemo(false)} selected={selected} />}
+      {demo && <DemoPanel onClose={() => setDemo(false)} selected={selected} onEvent={() => { setDemo(false); setEventDemo(true); }} />}
+      {eventDemo && <EventDemo onClose={() => setEventDemo(false)} />}
       {method && <Method onClose={() => setMethod(false)} />}
       {coverage && <Coverage onClose={() => setCoverage(false)} />}
       {confirmOpen && selected && <Confirm o={selected} onClose={() => setConfirmOpen(false)} />}

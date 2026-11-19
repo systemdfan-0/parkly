@@ -1,0 +1,226 @@
+{
+ "scenarios": 45864,
+ "skipped": 0,
+ "days": 7,
+ "groups": {
+  "all": {
+   "all": {
+    "n": 45864,
+    "fullA": 1388,
+    "fullB": 899,
+    "walkA": 163245,
+    "walkB": 210300,
+    "same": 32435,
+    "noneNow": 315
+   }
+  },
+  "horizon": {
+   "+5 мин": {
+    "n": 15288,
+    "fullA": 438,
+    "fullB": 292,
+    "walkA": 54387,
+    "walkB": 69980,
+    "same": 10750,
+    "noneNow": 105
+   },
+   "+10 мин": {
+    "n": 15288,
+    "fullA": 478,
+    "fullB": 297,
+    "walkA": 54387,
+    "walkB": 69916,
+    "same": 10797,
+    "noneNow": 105
+   },
+   "+15 мин": {
+    "n": 15288,
+    "fullA": 472,
+    "fullB": 310,
+    "walkA": 54471,
+    "walkB": 70404,
+    "same": 10888,
+    "noneNow": 105
+   }
+  },
+  "time": {
+   "утро 7–10": {
+    "n": 9072,
+    "fullA": 141,
+    "fullB": 144,
+    "walkA": 31341,
+    "walkB": 39434,
+    "same": 6774,
+    "noneNow": 48
+   },
+   "день 10–17": {
+    "n": 21168,
+    "fullA": 803,
+    "fullB": 548,
+    "walkA": 73614,
+    "walkB": 89044,
+    "same": 17058,
+    "noneNow": 216
+   },
+   "вечер 17–22": {
+    "n": 15624,
+    "fullA": 444,
+    "fullB": 207,
+    "walkA": 58290,
+    "walkB": 81822,
+    "same": 8603,
+    "noneNow": 51
+   }
+  },
+  "place": {
+   "Dostyk Plaza": {
+    "n": 3822,
+    "fullA": 255,
+    "fullB": 112,
+    "walkA": 6228,
+    "walkB": 9172,
+    "same": 3086,
+    "noneNow": 0
+   },
+   "Esentai Mall": {
+    "n": 3822,
+    "fullA": 330,
+    "fullB": 403,
+    "walkA": 21165,
+    "walkB": 28370,
+    "same": 2474,
+    "noneNow": 315
+   },
+   "MEGA Alma-Ata": {
+    "n": 3822,
+    "fullA": 34,
+    "fullB": 10,
+    "walkA": 4002,
+    "walkB": 4290,
+    "same": 3726,
+    "noneNow": 0
+   },
+   "Зелёный базар": {
+    "n": 3822,
+    "fullA": 196,
+    "fullB": 110,
+    "walkA": 7554,
+    "walkB": 10416,
+    "same": 2558,
+    "noneNow": 0
+   },
+   "Арбат и ЦУМ": {
+    "n": 3822,
+    "fullA": 165,
+    "fullB": 88,
+    "walkA": 16074,
+    "walkB": 18556,
+    "same": 2490,
+    "noneNow": 0
+   },
+   "Театр оперы и балета им. Абая": {
+    "n": 3822,
+    "fullA": 134,
+    "fullB": 14,
+    "walkA": 4830,
+    "walkB": 7502,
+    "same": 3154,
+    "noneNow": 0
+   },
+   "Площадь Республики": {
+    "n": 3822,
+    "fullA": 112,
+    "fullB": 34,
+    "walkA": 4674,
+    "walkB": 8820,
+    "same": 2680,
+    "noneNow": 0
+   },
+   "Центральный стадион": {
+    "n": 3822,
+    "fullA": 10,
+    "fullB": 10,
+    "walkA": 7704,
+    "walkB": 7694,
+    "same": 3812,
+    "noneNow": 0
+   },
+   "Вокзал Алматы-2": {
+    "n": 3822,
+    "fullA": 0,
+    "fullB": 2,
+    "walkA": 22932,
+    "walkB": 24722,
+    "same": 2927,
+    "noneNow": 0
+   },
+   "Медеу": {
+    "n": 3822,
+    "fullA": 14,
+    "fullB": 0,
+    "walkA": 32520,
+    "walkB": 53508,
+    "same": 1914,
+    "noneNow": 0
+   },
+   "КБТУ": {
+    "n": 3822,
+    "fullA": 130,
+    "fullB": 102,
+    "walkA": 8808,
+    "walkB": 10496,
+    "same": 3210,
+    "noneNow": 0
+   },
+   "Центральный парк": {
+    "n": 3822,
+    "fullA": 8,
+    "fullB": 14,
+    "walkA": 26754,
+    "walkB": 26754,
+    "same": 404,
+    "noneNow": 0
+   }
+  },
+  "budget": {
+   "без ограничения": {
+    "n": 22932,
+    "fullA": 579,
+    "fullB": 310,
+    "walkA": 60402,
+    "walkB": 99976,
+    "same": 13957,
+    "noneNow": 3
+   },
+   "до 300 ₸/ч": {
+    "n": 22932,
+    "fullA": 809,
+    "fullB": 589,
+    "walkA": 102843,
+    "walkB": 110324,
+    "same": 18478,
+    "noneNow": 312
+   }
+  },
+  "tight": {
+   "у ближайшей сейчас 4+ места": {
+    "n": 42558,
+    "fullA": 399,
+    "fullB": 385,
+    "walkA": 148671,
+    "walkB": 189862,
+    "same": 30581,
+    "noneNow": 0
+   },
+   "у ближайшей сейчас 1–3 места (или ни одного)": {
+    "n": 3306,
+    "fullA": 989,
+    "fullB": 514,
+    "walkA": 14574,
+    "walkB": 20438,
+    "same": 1854,
+    "noneNow": 315
+   }
+  }
+ }
+}

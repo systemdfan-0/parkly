@@ -99,7 +99,7 @@ describe('Пин: вопросы не про подбор', () => {
     useMap.setState({ geo: { status: 'ok', lat: 51.0889, lon: 71.4161 } }); // Астана, у Хан Шатыра
     const a = await ask('где припарковаться рядом со мной?');
     expect(a.reply?.show).toBeTruthy();
-    expect(a.text).toMatch(/Ближе всего/);
+    expect(a.text).toMatch(/мин пешком/);
   });
 
   test('рядом со мной без геопозиции и без карты — объясняет, что делать', async () => {

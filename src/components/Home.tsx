@@ -5,12 +5,13 @@ import { SCENARIOS } from '../engine/scenarios';
 import { fmtDow } from '../engine/time';
 import { indexSync, loadIndex, type CatalogIndex } from '../catalog/data';
 import { cityPlace } from '../catalog/geo';
+import { CarSection } from './Car';
 
 const QUICK = ['dostyk-plaza', 'esentai', 'mega', 'green-bazaar', 'opera', 'arbat'];
 const CITIES = ['Астана', 'Шымкент', 'Караганда', 'Актобе', 'Атырау', 'Усть-Каменогорск', 'Павлодар', 'Костанай'];
 const n = (x: number) => x.toLocaleString('ru-RU').replace(/,/g, ' ');
 
-export function Home({ onDemo, onCoverage, onAsk }: { onDemo: () => void; onCoverage: () => void; onAsk: () => void }) {
+export function Home({ onDemo, onCoverage, onAsk, onEvent }: { onDemo: () => void; onCoverage: () => void; onAsk: () => void; onEvent: () => void }) {
   const setDestination = useStore((s) => s.setDestination);
   const recent = useStore((s) => s.recent);
   const now = useStore((s) => s.sim.now);
@@ -22,6 +23,7 @@ export function Home({ onDemo, onCoverage, onAsk }: { onDemo: () => void; onCove
     <div className="home">
       <h1 className="slogan">Меньше кругов по городу — больше времени на жизнь</h1>
       <p className="home__lead">Скажите, куда едете, или <button className="link" onClick={onAsk}>напишите Пину</button> своими словами.</p>
+      <CarSection compact />
       <div className="home__group">
         <small className="muted">Алматы — демо с прогнозом мест и бронью</small>
         <div className="chips" aria-label="Популярные места Алматы">
@@ -30,6 +32,7 @@ export function Home({ onDemo, onCoverage, onAsk }: { onDemo: () => void; onCove
             return <button key={id} className="chip" onClick={() => setDestination(destToPlace(d))}>{d.name}</button>;
           })}
         </div>
+        <button className="chip chip--ghost" onClick={onEvent}>После мероприятия · симуляция двух режимов</button>
       </div>
       {ix && (
         <div className="home__group">

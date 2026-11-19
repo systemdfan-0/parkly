@@ -21,6 +21,7 @@ export interface CatalogLot {
   charge: string;
   area: number;          // м², для полигонов
   city: number;          // индекс в index.cities, −1 — вне населённых пунктов
+  entr: [number, number] | null; // въезд (amenity=parking_entrance), если отмечен в OSM
 }
 
 export interface City {
@@ -72,7 +73,7 @@ const cells = new Map<string, CatalogLot[]>();
 const cellP = new Map<string, Promise<CatalogLot[]>>();
 const byId = new Map<string, CatalogLot>();
 
-type Row = [string, number, number, string, string, CatKind | null, number | null, 0 | 1 | null, CatAccess | null, string, string, string, number, number];
+type Row = [string, number, number, string, string, CatKind | null, number | null, 0 | 1 | null, CatAccess | null, string, string, string, number, number, ([number, number] | null)?];
 
 export function loadCell(key: string): Promise<CatalogLot[]> {
   const hit = cells.get(key);
@@ -80,8 +81,8 @@ export function loadCell(key: string): Promise<CatalogLot[]> {
   let p = cellP.get(key);
   if (!p) {
     p = reader(`cells/${key}.json`).then((raw) => {
-      const lots = (raw as Row[]).map(([osm, lat, lon, name, kk, kind, cap, fee, access, hours, op, charge, area, city]): CatalogLot =>
-        ({ id: 'osm:' + osm, osm, lat, lon, name, kk, kind, cap, fee, access, hours, op, charge, area, city }));
+      const lots = (raw as Row[]).map(([osm, lat, lon, name, kk, kind, cap, fee, access, hours, op, charge, area, city, entr]): CatalogLot =>
+        ({ id: 'osm:' + osm, osm, lat, lon, name, kk, kind, cap, fee, access, hours, op, charge, area, city, entr: entr ?? null }));
       for (const l of lots) byId.set(l.id, l);
       cells.set(key, lots);
       return lots;

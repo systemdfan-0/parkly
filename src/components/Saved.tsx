@@ -5,6 +5,7 @@ import { haversine } from '../engine/geo';
 import { spots } from '../format';
 import { Icon } from './Icon';
 import { AppSection } from './UpdateScreen';
+import { CarSection } from './Car';
 
 /** Открыть парковку: назначение — ближайший ориентир, парковка выбрана. */
 export function useOpenLot() {
@@ -54,6 +55,7 @@ export function Saved() {
   return (
     <div className="savedv">
       <h2>Избранное</h2>
+      <CarSection />
       {favorites.length ? <ul className="saved-list">{favorites.map((id) => row(id, 'fav'))}</ul>
         : <p className="muted">Отмечайте звёздочкой парковки, куда ездите часто, — здесь будет видно, сколько там мест прямо сейчас.</p>}
       <h3>Жду свободное место</h3>

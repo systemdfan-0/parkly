@@ -94,7 +94,10 @@ describe('Пин понимает свободный текст', () => {
     expect(a.u.ctx.place?.name).toBe('Dostyk Plaza');
     expect(a.u.ctx.arriveIn).toBe(15);
     expect(a.reply!.mode).toBe('demo');
-    expect(a.reply!.text).toMatch(/ML-модель/);
+    // коротко: рекомендация, число и причина; источник прогноза — в подробностях
+    expect(a.reply!.text).toMatch(/^«.+», \d+ мин пешком\. К \d{1,2}:\d\d ожидается \d+(–\d+)? мест/);
+    expect(a.reply!.details!.join(' ')).toMatch(/ML-модель/);
+    expect(a.reply!.show!.lotId).toBe(a.reply!.lotId);
     expect(sentences(a.reply!.text)).toBeLessThanOrEqual(2);
     console.log('Достык 15 →', a.reply!.text);
 
@@ -144,8 +147,12 @@ describe('Пин понимает свободный текст', () => {
     if (b.u.kind !== 'query') throw new Error(b.u.kind);
     expect(b.u.ctx.arriveIn).toBe(15);
     expect(b.reply!.lotId).not.toBe(a.reply!.lotId);
-    expect(b.reply!.text).toMatch(/спектакл/);
+    // причина смены — в коротком ответе числом, объяснение тренда — в подробностях
+    expect(b.reply!.text).toMatch(/У театра/);
+    expect(b.reply!.text).toMatch(/шанс только \d+%/);
+    expect(b.reply!.details!.join(' ')).toMatch(/спектакл/);
     expect(sentences(b.reply!.text)).toBeLessThanOrEqual(2);
+    console.log('театр 5 →', a.reply!.text, '\nтеатр 15 →', b.reply!.text);
   });
 
   test('неоднозначное место — один короткий вопрос', () => {

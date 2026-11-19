@@ -9,3 +9,4 @@ catalog/.venv/
 Parkly.apk
 release/
 .claude/
+ml/scenarios.csv

@@ -72,3 +72,32 @@ export function predictML(lot: Lot, ms: number, r: Recent, horizon: number): MLB
   const f = (horizon - h0) / (h1 - h0);
   return bandFrom(p0.q.map((v, k) => v + f * (p1.q[k] - v)), p0.mean + f * (p1.mean - p0.mean));
 }
+
+/** Распределение свободных мест к приезду (квантили QL) — для учёта машин, которые уже едут на парковку. */
+export function predictMLDist(lot: Lot, ms: number, r: Recent, horizon: number): { q: number[]; mean: number } | null {
+  if (horizon > ML_MAX_H) return null;
+  const hs = [0, ...ML_HORIZONS];
+  let i = hs.findIndex((h) => h >= horizon);
+  if (i <= 0) i = 1;
+  const h0 = hs[i - 1], h1 = hs[i];
+  const p0 = h0 === 0 ? { q: QL.map(() => r.now), mean: r.now } : predictAt(lot, ms, r, h0);
+  const p1 = predictAt(lot, ms, r, h1);
+  const f = (horizon - h0) / (h1 - h0);
+  return { q: p0.q.map((v, k) => v + f * (p1.q[k] - v)), mean: p0.mean + f * (p1.mean - p0.mean) };
+}
+
+/** P(свободно ≥ k) по квантилям; k = 1 — обычный «шанс найти место». */
+export function pAtLeast(q: number[], k: number): number {
+  const x = k - 0.5;
+  if (q[0] >= x) return 1;
+  if (q[q.length - 1] < x) return 0;
+  for (let i = 1; i < q.length; i++) {
+    if (q[i] >= x) {
+      const f = q[i] === q[i - 1] ? 0 : (x - q[i - 1]) / (q[i] - q[i - 1]);
+      return 1 - (QL[i - 1] + f * (QL[i] - QL[i - 1]));
+    }
+  }
+  return 0;
+}
+/** Квантиль уровня level (0..1). */
+export const quantileAt = (q: number[], level: number) => at(q, level);

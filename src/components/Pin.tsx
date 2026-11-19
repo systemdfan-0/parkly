@@ -73,11 +73,18 @@ function Bubble({ m, onShow }: { m: Msg; onShow: (r: PinReply) => void }) {
   const act = usePin((s) => s.act);
   const choose = usePin((s) => s.choose);
   const send = usePin((s) => s.send);
+  const [open, setOpen] = useState(false);
   if (m.from === 'me') return <div className="bubble bubble--me">{m.text}</div>;
   const r = m.reply;
   return (
     <div className="bubble bubble--pin" aria-live="polite">
       <p>{m.text}</p>
+      {r?.details?.length ? (
+        <>
+          <button className="link small pinbot__more" aria-expanded={open} onClick={() => setOpen((v) => !v)}>{open ? 'Скрыть подробности' : 'Подробнее и запасной вариант'}</button>
+          {open && <ul className="pinbot__details">{r.details.map((d) => <li key={d}>{d}</li>)}</ul>}
+        </>
+      ) : null}
       {r?.source && (
         <p className="pinbot__src">
           {r.mode === 'demo'
@@ -92,7 +99,7 @@ function Bubble({ m, onShow }: { m: Msg; onShow: (r: PinReply) => void }) {
       ) : null}
       {(r?.show || r?.actions?.length || m.options?.length) && (
         <div className="row">
-          {r?.show && <button className="btn btn--primary btn--sm" onClick={() => onShow(r)}><Icon name="map" size={16} /> Показать на карте</button>}
+          {r?.show && <button className="btn btn--primary btn--sm" onClick={() => onShow(r)}><Icon name="map" size={16} /> На карте</button>}
           {r?.actions?.map((a) => <button key={a.label} className="btn btn--ghost btn--sm" onClick={() => act(a)}>{a.label}</button>)}
           {m.options?.map((h) => (
             <button key={h.place.id} className="chip" onClick={() => choose(h)}>{h.city && h.kind !== 'city' ? `${h.city.ru}: ${h.place.name}` : h.place.name}</button>

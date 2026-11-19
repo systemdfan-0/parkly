@@ -51,7 +51,7 @@ export const usePin = create<PinState>()((set, get) => {
   function sayTalk(tk: Extract<Talk, { kind: 'say' }>) {
     const ctx = get().ctx;
     const show = tk.showLot && ctx.place ? { lotId: tk.showLot, place: ctx.place } : undefined;
-    const reply: PinReply | undefined = show ? { text: tk.text, mode: LOT_BY_ID[tk.showLot!] ? 'demo' : 'catalog', show } : undefined;
+    const reply: PinReply | undefined = show ? { text: tk.text, mode: LOT_BY_ID[tk.showLot!] ? 'demo' : 'catalog', show, ctx } : undefined;
     say({ from: 'pin', text: tk.text, reply, suggest: tk.suggest });
   }
 

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useStore } from '../store';
 import type { Option } from '../engine/recommend';
 import { TAG_LABEL, arrivalForecast } from '../engine/recommend';
@@ -11,6 +11,10 @@ import { ForecastLine } from './LotCard';
 import { ForecastChart } from './ForecastChart';
 import { DurationPicker } from './Results';
 import { Icon } from './Icon';
+import { navLink } from '../nav';
+import { catalogNear } from '../catalog/data';
+import { ParkedHere } from './Car';
+import { MeasurementLine } from './Measurement';
 
 interface Props { o: Option; onBack: () => void; onBook: () => void; onMethod: () => void }
 
@@ -36,6 +40,16 @@ export function LotDetail({ o, onBack, onBook, onMethod }: Props) {
     .filter((x) => x.r.source === 'ml').map((x) => ({ t: now + x.h * MIN, ...x.r.fc })), [lot, occ, now, bookings, hist]);
   const atDoor = o.eta + o.walkMin * MIN;
   const canBook = o.available && lot.bookable && o.freeNow > 0 && !myActive;
+  // въезд — из каталога OSM: демо-парковка стоит на том же объекте (lot.osm)
+  const [entr, setEntr] = useState<[number, number] | null>(null);
+  useEffect(() => {
+    setEntr(null);
+    if (!lot.osm) return;
+    let live = true;
+    catalogNear(lot.lat, lot.lon, 80).then((ls) => { if (live) setEntr(ls.find((c) => c.osm === lot.osm)?.entr ?? null); }, () => {});
+    return () => { live = false; };
+  }, [lot]);
+  const nav = navLink({ lat: lot.lat, lon: lot.lon, entr, label: lot.name });
 
   const watch = async () => {
     if (!watching && typeof Notification !== 'undefined' && Notification.permission === 'default') {
@@ -114,6 +128,13 @@ export function LotDetail({ o, onBack, onBook, onMethod }: Props) {
       {lot.features.length > 0 && (
         <ul className="features">{lot.features.map((f) => <li key={f}>{f}</li>)}</ul>
       )}
+
+      <MeasurementLine lotId={lot.id} />
+      <div className="row detail__nav">
+        <a className="btn btn--dark btn--grow" href={nav.href} target="_blank" rel="noreferrer"><Icon name="route" size={18} /> {nav.text}</a>
+      </div>
+      <p className="note">{nav.toEntrance ? 'Навигатор ведёт к въезду, отмеченному в OpenStreetMap.' : 'Въезд в OSM не отмечен — навигатор ведёт к самой парковке.'}</p>
+      <ParkedHere lat={lot.lat} lon={lot.lon} name={lot.name} id={lot.id} />
 
       <div className="actionbar">
         <button className={`icon-btn icon-btn--bar ${watching ? 'is-on' : ''}`} onClick={watch} aria-pressed={watching}

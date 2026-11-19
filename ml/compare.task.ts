@@ -64,6 +64,9 @@ ${table}
 В приложении дерево используется для горизонтов до 15 минут (между 5, 10 и 15 — линейная интерполяция).
 Если до приезда больше 15 минут, работает эвристика, и карточка подписывает это: «прогноз: эвристика».
 `;
-  writeFileSync('ml/REPORT.md', md);
+  // раздел про «приезды на полную» (ml/arrivals.task.ts) сохраняем
+  const old = (() => { try { return readFileSync('ml/REPORT.md', 'utf8'); } catch { return ''; } })();
+  const keep = old.match(/<!-- arrivals:start -->[\s\S]*<!-- arrivals:end -->/)?.[0];
+  writeFileSync('ml/REPORT.md', keep ? md.trimEnd() + '\n\n' + keep + '\n' : md);
   for (const s of Object.values(by)) expect(s.mism / s.n).toBeLessThan(0.002);
 });

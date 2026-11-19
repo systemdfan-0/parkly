@@ -11,7 +11,7 @@ import { CHANNEL_LABEL, type Channel } from '../updates/manifest';
 
 const SPEEDS = [0, 1, 10, 60];
 
-export function DemoPanel({ onClose, selected }: { onClose: () => void; selected: Option | null }) {
+export function DemoPanel({ onClose, selected, onEvent }: { onClose: () => void; selected: Option | null; onEvent: () => void }) {
   const sim = useStore((s) => s.sim);
   const setScenario = useStore((s) => s.setScenario);
   const setSpeed = useStore((s) => s.setSpeed);
@@ -81,6 +81,9 @@ export function DemoPanel({ onClose, selected }: { onClose: () => void; selected
       ) : <p className="muted small">Выберите парковку на карте или в списке — здесь появятся кнопки сценария.</p>}
 
       <UpdatesDemo onClose={onClose} />
+
+      <h3>После мероприятия</h3>
+      <button className="btn btn--dark btn--full" onClick={onEvent}>Симуляция: N машин у театра Абая, два режима</button>
 
       <h3>Сброс</h3>
       <button className="btn btn--ghost btn--full" onClick={() => { if (confirm('Сбросить брони, избранное и время к исходному демо?')) { resetDemo(); onClose(); } }}>

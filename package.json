@@ -1,7 +1,7 @@
 {
   "name": "parkly",
   "private": true,
-  "version": "1.3.0",
+  "version": "1.4.0",
   "type": "module",
   "scripts": {
     "dev": "vite --host --port 5180",
@@ -12,7 +12,8 @@
     "ml:meta": "vitest run --config ml/vitest.ml.config.ts ml/export-meta.task.ts",
     "ml:train": "ml/.venv/bin/python ml/train.py",
     "ml:compare": "vitest run --config ml/vitest.ml.config.ts ml/compare.task.ts",
-    "ml": "npm run ml:meta && npm run ml:train && npm run ml:compare",
+    "ml:arrivals": "vitest run --config ml/vitest.ml.config.ts ml/arrivals.task.ts",
+    "ml": "npm run ml:meta && npm run ml:train && npm run ml:compare && npm run ml:arrivals",
     "catalog:setup": "python3 -m venv catalog/.venv && catalog/.venv/bin/pip install -r catalog/requirements.txt",
     "catalog": "catalog/.venv/bin/python -I catalog/import.py",
     "icons": "bash scripts/make-icons.sh",
@@ -20,6 +21,7 @@
     "release:test-server": "node scripts/release-test-server.mjs",
     "android": "npm run build && npx cap sync android && cd android && ./gradlew assembleDebug",
     "release": "bash scripts/publish-release.sh",
+    "pilot:import": "node scripts/import-measurements.ts",
     "anchors": "catalog/.venv/bin/python -I catalog/anchor_demo.py"
   },
   "dependencies": {

@@ -52,7 +52,16 @@ export interface CatResult {
   /** Сколько вариантов отсеяно бюджетом (цена выше) и сколько с неизвестной ценой. */
   overBudget: number;
   unknownPrice: number;
+  /** Поиск расширен: в первом радиусе не нашлось подходящего (открытого для всех и в бюджете). */
+  expanded?: { from: number; why: string };
+  /** Частные парковки ближе лучшего варианта — показываем отдельно: туда нужен пропуск. */
+  privateNear: CatOption[];
+  /** До какого радиуса искали. */
+  searched?: number;
 }
+
+/** Подходит водителю без пропуска: не частная и (если задан бюджет) цена известна и в пределах. */
+export const suitable = (o: CatOption) => o.inBudget === true && o.lot.access !== 'private';
 
 const W: Record<Priority, { walk: number; price: number; data: number }> = {
   balanced: { walk: 1, price: 1, data: 1 }, close: { walk: 2.4, price: 0.3, data: 0.5 },
@@ -92,16 +101,53 @@ export function rankCatalog(place: { lat: number; lon: number }, lots: CatalogLo
     }
   }
   const rest = budget != null ? opts.filter((o) => o.inBudget !== true).sort((a, b) => a.distM - b.distM) : [];
-  return { options: [...pool, ...rest], radius, overBudget, unknownPrice };
+  // частные — отдельным списком; в общем порядке они идут после доступных всем
+  const open = pool.filter((o) => o.lot.access !== 'private');
+  const priv = pool.filter((o) => o.lot.access === 'private');
+  if (open.length && pool[0].lot.access === 'private') {
+    pool[0].tags = pool[0].tags.filter((t) => t !== 'best');
+    open[0].tags.unshift('best');
+  }
+  const bestDist = open[0]?.distM ?? Infinity;
+  const privateNear = priv.filter((o) => o.distM < bestDist).sort((a, b) => a.distM - b.distM).slice(0, 3);
+  return { options: [...open, ...priv, ...rest], radius, overBudget, unknownPrice, privateNear };
+}
+
+function whyNone(r: CatResult): string {
+  const n = r.options.length;
+  if (!n) return 'парковок нет';
+  const priv = r.options.filter((o) => o.lot.access === 'private').length;
+  if (priv === n) return `только частные (${n})`;
+  if (r.overBudget && !r.unknownPrice) return 'все дороже бюджета';
+  if (r.unknownPrice && !r.overBudget) return 'у всех не указана цена';
+  return 'нет открытых для всех в бюджете';
 }
 
 /** Парковки каталога у места назначения: 800 м, если пусто — 1,5 и 3 км. */
+export const CAT_RADII = [800, 1500, 3000];
+
+/**
+ * Парковки каталога у места назначения: сначала 800 м; если там нет подходящей (открытой для всех и в бюджете) —
+ * расширяем до 1,5 и 3 км и запоминаем, почему. Если подходящей нет и в 3 км — отдаём лучшее, что нашли.
+ */
 export async function catalogFor(place: { lat: number; lon: number }, priority: Priority, budget: number | null): Promise<CatResult> {
-  for (const r of [800, 1500, 3000]) {
+  let first: CatResult | null = null;
+  let last: CatResult | null = null;
+  for (const r of CAT_RADII) {
     const lots = await catalogNear(place.lat, place.lon, r);
-    if (lots.length) return rankCatalog(place, lots, priority, budget, r);
+    const res = rankCatalog(place, lots, priority, budget, r);
+    first ??= res;
+    if (lots.length) last = res;
+    if (res.options.some(suitable)) {
+      if (r !== CAT_RADII[0]) res.expanded = { from: CAT_RADII[0], why: whyNone(first) };
+      res.searched = r;
+      return res;
+    }
   }
-  return { options: [], radius: 3000, overBudget: 0, unknownPrice: 0 };
+  const maxR = CAT_RADII[CAT_RADII.length - 1];
+  // подходящих нет нигде до 3 км: показываем ближние варианты (что есть) и говорим, докуда искали
+  if (first && first.options.length) return { ...first, searched: maxR };
+  return { ...(last ?? { options: [], radius: maxR, overBudget: 0, unknownPrice: 0, privateNear: [] }), searched: maxR };
 }
 
 export const distText = (o: CatOption) => `${fmtDist(o.distM)}, ${o.walkMin} мин пешком`;

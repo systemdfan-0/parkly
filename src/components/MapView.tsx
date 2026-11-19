@@ -11,6 +11,7 @@ import { catalogLot, cellKeysIn, cellSync, isCatalogId, loadCell, loadIndex, typ
 import type { CatResult } from '../catalog/rank';
 import { Icon } from './Icon';
 import { addBase } from '../mapBase';
+import { useCar } from '../car/store';
 
 // Схема главных улиц Алматы — если плитки карты не загрузились (нет интернета).
 const SCHEMA: [number, number][][] = [
@@ -76,6 +77,8 @@ export function MapView({ results, cat, wide, padBottom, onPick, onSelect }: Pro
   const fly = useMap((s) => s.fly);
   const geo = useMap((s) => s.geo);
   const online = useMap((s) => s.online);
+  const car = useCar((s) => s.car);
+  const picking = useCar((s) => s.picking);
 
   const pads = () => ({
     paddingTopLeft: (wide ? [440, 40] : [24, 84]) as L.PointTuple,
@@ -97,6 +100,8 @@ export function MapView({ results, cat, wide, padBottom, onPick, onSelect }: Pro
     fixed.current = L.layerGroup().addTo(m);
     walk.current = L.layerGroup().addTo(m);
     m.on('contextmenu', (e: L.LeafletMouseEvent) => onPickRef.current(e.latlng.lat, e.latlng.lng));
+    // «Где моя машина» → «Отметить на карте»: следующее касание ставит точку
+    m.on('click', (e: L.LeafletMouseEvent) => { if (useCar.getState().picking) useCar.getState().pick(e.latlng.lat, e.latlng.lng); });
     const report = () => {
       const c = m.getCenter(), b = m.getBounds();
       useMap.getState().setView({ lat: c.lat, lon: c.lng, zoom: m.getZoom(), s: b.getSouth(), w: b.getWest(), n: b.getNorth(), e: b.getEast() });
@@ -139,13 +144,19 @@ export function MapView({ results, cat, wide, padBottom, onPick, onSelect }: Pro
         keyboard: false, zIndexOffset: 600, interactive: false,
       }).addTo(g);
     }
+    if (car) {
+      L.marker([car.lat, car.lon], {
+        icon: L.divIcon({ className: 'mk', iconSize: [0, 0], html: `<div class="carmk" title="Моя машина"><svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="${CAR_PATH}"/></svg>${car.note ? `<em>${esc(car.note)}</em>` : ''}</div>` }),
+        keyboard: false, zIndexOffset: 2500, interactive: false,
+      }).addTo(g);
+    }
     if (destination) {
       L.marker([destination.lat, destination.lon], {
         icon: L.divIcon({ className: 'mk', iconSize: [0, 0], html: destination.kind === 'city' || /^(me|view):/.test(destination.id) ? '' : `<div class="dest"><div class="dest__pin"></div><div class="dest__label">${esc(destination.name)}</div></div>` }),
         keyboard: false, zIndexOffset: 1000, interactive: false,
       }).addTo(g);
     }
-  }, [destination, origin, geo]);
+  }, [destination, origin, geo, car]);
 
   // кадрирование при смене назначения: демо-варианты или первые варианты из каталога
   const catKey = cat ? cat.options.slice(0, 5).map((o) => o.lot.id).join(',') : '';
@@ -298,6 +309,12 @@ export function MapView({ results, cat, wide, padBottom, onPick, onSelect }: Pro
   return (
     <div className={`map ${offline || !online ? 'map--offline' : ''}`}>
       <div ref={el} className="map__canvas" role="application" aria-label="Карта парковок Казахстана" />
+      {picking && (
+        <div className="map__pick" role="status">
+          <span>Нажмите на карту там, где стоит машина</span>
+          <button className="btn btn--ghost btn--sm" onClick={() => useCar.getState().setPicking(false)}>Отмена</button>
+        </div>
+      )}
       {(offline || !online) && <div className="map__offline" role="status">{online ? 'Подложка карты не загрузилась.' : 'Нет интернета.'} Каталог парковок, Пин и прогноз работают офлайн.</div>}
       {!wide && (
         <button className={`locate ${geo.status === 'asking' ? 'is-busy' : ''} ${geo.status === 'ok' ? 'is-on' : ''}`} aria-label="Где я"
@@ -340,6 +357,8 @@ function demoHtml(title: string, lvl: string, label: string, sel = false, pin = 
   const cls = ['cat', 'cat--demo', filled ? `cat--fill cat--${lvl}` : '', sel ? 'is-sel' : '', pin ? 'is-pin' : ''].join(' ');
   return `<div class="${cls}" title="${esc(title)}"><b>${esc(label)}</b>${filled ? '' : `<i class="dot dot--${lvl}"></i>`}</div>`;
 }
+
+const CAR_PATH = 'M5 11 6.5 6.5A2 2 0 0 1 8.4 5h7.2a2 2 0 0 1 1.9 1.5L19 11a2 2 0 0 1 1 1.7V18h-2v1.5a1 1 0 0 1-2 0V18H8v1.5a1 1 0 0 1-2 0V18H4v-5.3A2 2 0 0 1 5 11Zm2.1 0h9.8l-1.2-3.8H8.3ZM6.5 13a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Zm11 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Z';
 
 function esc(s: string) {
   return s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);

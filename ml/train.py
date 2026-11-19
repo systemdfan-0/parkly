@@ -208,6 +208,20 @@ def main():
             d, k, m, fn, f5, f10, f15 = info[i]
             for h in HORIZONS:
                 w.writerow([lots[k]["id"], START_MS + m * 60_000, fn, f5, f10, f15, h, int(Y[h][i]), int(preds[h][j])])
+    # сценарии «водитель едет к месту» для метрики «доля приездов на полную парковку» (ml/arrivals.task.ts):
+    # тестовые дни, каждые 10 минут с 7:00 до 22:00, все открытые парковки в один и тот же момент
+    with open(ROOT / "scenarios.csv", "w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["lot_id", "ms", "free_now", "free_m5", "free_m10", "free_m15", "free_p5", "free_p10", "free_p15"])
+        for d in range(TRAIN_DAYS, DAYS):
+            for mm in range(7 * 60, 22 * 60 + 1, 10):
+                m = d * 1440 + mm
+                for k in range(len(lots)):
+                    if not (open_[k, m] and open_[k, m + 15]):
+                        continue
+                    w.writerow([lots[k]["id"], START_MS + m * 60_000, *(int(obs[k, m - j]) for j in (0, 5, 10, 15)),
+                                *(int(obs[k, m + h]) for h in HORIZONS)])
+
     (ROOT / "train_metrics.json").write_text(json.dumps({
         "samples": int(len(X)), "train": int(tr.sum()), "test": int(te.sum()), "train_days": TRAIN_DAYS, "days": DAYS,
         "rain_days": [int(d) for d in np.where(rain_days)[0]], "metrics": out["metrics"],

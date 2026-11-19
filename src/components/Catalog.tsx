@@ -2,12 +2,15 @@ import { useEffect, useMemo, useState } from 'react';
 import { useStore } from '../store';
 import type { Place } from '../data/places';
 import { catalogLot, loadIndex, catalogNear, indexSync, distM, type CatalogIndex, type CatalogLot } from '../catalog/data';
-import { catalogFor, feeText, accessText, capText, lotTitle, NO_DATA, CAT_KIND_LABEL, type CatOption, type CatResult } from '../catalog/rank';
+import { catalogFor, suitable, feeText, accessText, capText, lotTitle, NO_DATA, CAT_KIND_LABEL, type CatOption, type CatResult } from '../catalog/rank';
 import { fmtDist } from '../engine/geo';
 import { tenge } from '../engine/pricing';
 import { useMap } from '../mapState';
 import { Modal } from './Modal';
 import { Icon } from './Icon';
+import { navLink } from '../nav';
+import { ParkedHere } from './Car';
+import { MeasurementLine } from './Measurement';
 
 const fmtDate = (s: string) => { const [d] = s.split(' '); const [y, m, dd] = d.split('-'); return `${dd}.${m}.${y}`; };
 const n = (x: number) => x.toLocaleString('ru-RU').replace(/,/g, ' ');
@@ -73,7 +76,9 @@ export function CatalogResults({ place, r, state, compact }: { place: Place; r: 
   if (state === 'error') return <div className="empty"><h2>Каталог не открылся</h2><p className="muted">Файлы каталога лежат в приложении. Перезапустите Parkly.</p></div>;
   if (!r) return <div className="skeleton" aria-label="Ищу парковки в каталоге"><span /><span /><span /></div>;
   const ok = r.options.filter((o) => o.inBudget === true);
-  const list = compact && !more ? r.options.slice(0, 3) : r.options.slice(0, 40);
+  const pub = r.options.filter((o) => o.lot.access !== 'private');
+  const priv = r.options.filter((o) => o.lot.access === 'private');
+  const list = compact && !more ? pub.slice(0, 3) : pub.slice(0, 40);
   return (
     <div className="results">
       {!compact && (
@@ -94,10 +99,25 @@ export function CatalogResults({ place, r, state, compact }: { place: Place; r: 
       {budget != null && !ok.length && r.options.length > 0 && (
         <div className="banner banner--warn"><Icon name="info" size={18} /><span>Ни у одной парковки рядом цена не подходит или не указана. <button className="link" onClick={() => setBudget(null)}>Показать без учёта цены</button></span></div>
       )}
+      {r.expanded && (
+        <div className="banner banner--info"><Icon name="info" size={18} /><span>В {fmtDist(r.expanded.from)} {r.expanded.why} — расширил поиск до {fmtDist(r.radius)}.</span></div>
+      )}
+      {!r.options.some(suitable) && r.options.length > 0 && r.searched && (
+        <div className="banner banner--warn"><Icon name="info" size={18} /><span>Искал до {fmtDist(r.searched)}: открытых для всех{budget != null ? ' и в бюджете' : ''} парковок нет. Ниже — ближайшие, что есть.</span></div>
+      )}
       <div className="results__list">
         {list.map((o, i) => <CatCard key={o.lot.id} o={o} rank={!compact && i < 9 ? i + 1 : undefined} selected={o.lot.id === selectedId} onClick={() => selectLot(o.lot.id)} />)}
       </div>
-      {compact && r.options.length > 3 && !more && <button className="btn btn--ghost btn--sm btn--full" onClick={() => setMore(true)}>Показать все {r.options.length}</button>}
+      {priv.length > 0 && (!compact || more) && (
+        <>
+          <h3 className="results__sub">Частные — нужен пропуск ({priv.length})</h3>
+          <p className="muted small">В OpenStreetMap у них отмечен ограниченный доступ: жильцы, сотрудники или по пропуску.</p>
+          <div className="results__list">
+            {priv.slice(0, 10).map((o) => <CatCard key={o.lot.id} o={o} selected={o.lot.id === selectedId} onClick={() => selectLot(o.lot.id)} />)}
+          </div>
+        </>
+      )}
+      {compact && (pub.length > 3 || priv.length > 0) && !more && <button className="btn btn--ghost btn--sm btn--full" onClick={() => setMore(true)}>Показать все {r.options.length}</button>}
       {!compact && <p className="note">Цены, доступ и вместимость — из OpenStreetMap; если тега нет, пишем «Нет данных». Занятость и прогноз для этих парковок не считаем: датчиков нет. Источник: <SourceLine />.</p>}
     </div>
   );
@@ -119,13 +139,14 @@ export function CatalogDetail({ id, onBack }: { id: string; onBack: () => void }
 
   const d = destination && destination.kind !== 'city' ? distM(destination.lat, destination.lon, lot.lat, lot.lon) : null;
   const osmUrl = `https://www.openstreetmap.org/${lot.osm[0] === 'n' ? 'node' : lot.osm[0] === 'w' ? 'way' : 'relation'}/${lot.osm.slice(1)}`;
-  const geoUrl = `geo:${lot.lat},${lot.lon}?q=${lot.lat},${lot.lon}(${encodeURIComponent(lotTitle(lot))})`;
+  const nav = navLink({ lat: lot.lat, lon: lot.lon, entr: lot.entr, label: lotTitle(lot) });
   const rows: [string, string][] = [
     ['Цена', feeText(lot)],
     ['Доступ', accessText(lot)],
     ['Вместимость', capText(lot)],
     ['Тип', lot.kind ? CAT_KIND_LABEL[lot.kind] : NO_DATA],
     ['Часы работы', lot.hours || NO_DATA],
+    ['Въезд', lot.entr ? 'Отмечен в OSM' : NO_DATA],
     ['Оператор', lot.op || NO_DATA],
     ['Занятость сейчас', NO_DATA],
     ['Прогноз к приезду', 'Не считаем: нет данных о занятости'],
@@ -141,14 +162,16 @@ export function CatalogDetail({ id, onBack }: { id: string; onBack: () => void }
         </div>
       </div>
       {lot.access === 'private' && <div className="banner banner--warn"><Icon name="info" size={18} /><span>В OSM отмечена как частная: въезд по пропуску. В подборе Пин ставит её ниже и предупреждает.</span></div>}
+      <MeasurementLine lotId={lot.id} />
       <dl className="facts">
         {rows.map(([k, v]) => <div key={k}><dt>{k}</dt><dd className={v === NO_DATA ? 'nodata' : ''}>{v}</dd></div>)}
       </dl>
       <div className="row">
-        <a className="btn btn--primary btn--grow" href={geoUrl}><Icon name="route" size={18} /> Маршрут в навигаторе</a>
+        <a className="btn btn--primary btn--grow" href={nav.href} target="_blank" rel="noreferrer"><Icon name="route" size={18} /> {nav.text}</a>
         <a className="btn btn--ghost" href={osmUrl} target="_blank" rel="noreferrer">OSM</a>
       </div>
-      <p className="note">Бронь недоступна: это парковка из открытого каталога, а не демо-партнёр Parkly. Источник: <SourceLine />, объект {lot.osm}.</p>
+      <ParkedHere lat={lot.lat} lon={lot.lon} name={lotTitle(lot)} id={lot.id} />
+      <p className="note">{nav.toEntrance ? 'Навигатор ведёт к въезду, отмеченному в OSM. ' : 'Въезд в OSM не отмечен — навигатор ведёт к центру парковки. '}Бронь недоступна: это парковка из открытого каталога, а не демо-партнёр Parkly. Источник: <SourceLine />, объект {lot.osm}.</p>
     </div>
   );
 }

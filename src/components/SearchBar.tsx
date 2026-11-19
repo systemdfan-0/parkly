@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { searchOnline } from '../engine/search';
-import type { Place } from '../data/places';
+import { ALMATY_BOUNDS, type Place } from '../data/places';
 import { useStore } from '../store';
 import { useMap } from '../mapState';
 import { fmtTime } from '../engine/time';
@@ -15,6 +15,19 @@ export function SearchBar({ onOpenDemo }: { onOpenDemo: () => void }) {
   const now = useStore((s) => s.sim.now);
   const speed = useStore((s) => s.sim.speed);
   const online = useMap((s) => s.online);
+  const view = useMap((s) => s.view);
+  const [real, setReal] = useState(() => Date.now());
+  useEffect(() => { const t = setInterval(() => setReal(Date.now()), 30_000); return () => clearInterval(t); }, []);
+  // чьё время показывать: демо Алматы (симуляция) или город каталога (местное время, занятость неизвестна)
+  const pt = destination ?? (view ? { lat: view.lat, lon: view.lon } : null);
+  const b = ALMATY_BOUNDS;
+  const inDemo = !pt || (pt.lat >= b.south && pt.lat <= b.north && pt.lon >= b.west && pt.lon <= b.east);
+  const ixNow = indexSync();
+  const city = !inDemo && pt && ixNow
+    ? ixNow.cities.filter((c) => c.lots > 0).reduce<{ c: CatalogIndex['cities'][number] | null; d: number }>((a, c) => {
+      const d = (c.lat - pt.lat) ** 2 + ((c.lon - pt.lon) * Math.cos((pt.lat * Math.PI) / 180)) ** 2;
+      return d < a.d ? { c, d } : a;
+    }, { c: null, d: Infinity }).c : null;
   const [q, setQ] = useState('');
   const [focus, setFocus] = useState(false);
   const [data, setData] = useState<{ ix: CatalogIndex | null; pois: Poi[] | null }>({ ix: indexSync(), pois: poisSync() });
@@ -80,11 +93,18 @@ export function SearchBar({ onOpenDemo }: { onOpenDemo: () => void }) {
             <Icon name="x" size={18} />
           </button>
         ) : null}
-        <button className="clock" onClick={onOpenDemo} aria-label="Демо-режим: время и симуляция">
-          <Icon name={speed ? 'flask' : 'pause'} size={14} />
-          <span>{fmtTime(now)}</span>
-          {speed > 1 && <em>×{speed}</em>}
-        </button>
+        {inDemo ? (
+          <button className="clock" onClick={onOpenDemo} aria-label={`Демо Алматы, время симуляции ${fmtTime(now)}`}>
+            <Icon name={speed ? 'flask' : 'pause'} size={14} />
+            <span>Демо · {fmtTime(now)}</span>
+            {speed > 1 && <em>×{speed}</em>}
+          </button>
+        ) : (
+          <button className="clock clock--city" onClick={onOpenDemo} aria-label={`${city?.ru ?? 'Каталог OSM'}: местное время ${fmtTime(real)}, занятость неизвестна`}>
+            <Icon name="pin" size={14} />
+            <span>{city ? `${city.ru.length > 11 ? city.ru.slice(0, 10) + '…' : city.ru} · ` : ''}{fmtTime(real)}</span>
+          </button>
+        )}
       </div>
 
       {open && (

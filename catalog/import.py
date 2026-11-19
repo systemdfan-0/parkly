@@ -147,6 +147,8 @@ def parse(pbf):
     wkbf = osmium.geom.WKBFactory()
     lots, places, pois, regions = [], [], [], []
     excluded = Counter()
+    entrances = []   # amenity=parking_entrance: (lat, lon)
+    geoms = {}       # геометрия парковок-полигонов — чтобы привязать к ним въезды
 
     fp = (osmium.FileProcessor(pbf)
           .with_locations()
@@ -187,6 +189,9 @@ def parse(pbf):
             continue
 
         amenity = tags.get('amenity')
+        if amenity == 'parking_entrance' and o.is_node():
+            entrances.append((lat, lon))
+            continue
         if amenity == 'parking':
             pk = tags.get('parking', '')
             if pk in EXCLUDE_PARKING:
@@ -194,6 +199,8 @@ def parse(pbf):
                 continue
             ru, kk, en, alt = names(tags)
             acc_raw = (tags.get('access') or '').lower()
+            if not o.is_node():
+                geoms[oid] = g
             lots.append({
                 'id': oid, 'lat': round(lat, 5), 'lon': round(lon, 5),
                 'name': ru, 'kk': kk,
@@ -205,6 +212,7 @@ def parse(pbf):
                 'op': (tags.get('operator') or '')[:60],
                 'charge': (tags.get('charge') or '')[:40],
                 'area': int(area_m2) if area_m2 else 0,
+                'entr': None,
             })
             continue
 
@@ -225,7 +233,54 @@ def parse(pbf):
                 continue
             ru, kk, en, alt = names(tags)
             pois.append({'id': oid, 'ru': ru, 'kk': kk, 'en': en, 'alt': alt[:3], 'lat': round(lat, 5), 'lon': round(lon, 5), 'cat': cat})
+    attach_entrances(lots, geoms, entrances)
     return lots, places, pois, regions, excluded
+
+
+def attach_entrances(lots, geoms, entrances):
+    """Въезд (amenity=parking_entrance) — к парковке, чей контур в пределах 30 м (точка-парковка — 40 м).
+    Если въездов у парковки несколько, берём ближайший к её центру: туда и ведёт кнопка «Ко въезду»."""
+    if not entrances:
+        return
+    by_id = {l['id']: l for l in lots}
+    ids = list(geoms)
+    tree = STRtree([geoms[i] for i in ids]) if ids else None
+    pts = [l for l in lots if l['id'][0] == 'n']
+    grid = defaultdict(list)
+    for l in pts:
+        grid[(int(l['lat'] * 500), int(l['lon'] * 500))].append(l)
+
+    def m_dist(a_lat, a_lon, b_lat, b_lon):
+        c = math.cos(math.radians(a_lat))
+        return math.hypot((a_lat - b_lat) * 111_320, (a_lon - b_lon) * 111_320 * c)
+
+    best = {}
+    for lat, lon in entrances:
+        cands = []
+        if tree is not None:
+            pt = shapely.Point(lon, lat)
+            for j in tree.query(pt.buffer(0.0005)):
+                g = geoms[ids[int(j)]]
+                d = g.distance(pt) * 111_320  # в градусах → метры (грубо, для 30 м достаточно)
+                if d <= 30:
+                    cands.append((d, ids[int(j)]))
+        gy, gx = int(lat * 500), int(lon * 500)
+        for dy in (-1, 0, 1):
+            for dx in (-1, 0, 1):
+                for l in grid.get((gy + dy, gx + dx), ()):
+                    d = m_dist(lat, lon, l['lat'], l['lon'])
+                    if d <= 40:
+                        cands.append((d, l['id']))
+        if not cands:
+            continue
+        _, lid = min(cands)
+        l = by_id[lid]
+        dc = m_dist(lat, lon, l['lat'], l['lon'])
+        if lid not in best or dc < best[lid][0]:
+            best[lid] = (dc, [round(lat, 6), round(lon, 6)])
+    for lid, (_, e) in best.items():
+        by_id[lid]['entr'] = e
+    print(f'  въездов в OSM: {len(entrances)}, привязано к парковкам: {len(best)}')
 
 
 def build(lots, places, pois, regions, excluded, meta):
@@ -301,7 +356,7 @@ def build(lots, places, pois, regions, excluded, meta):
     for (cy, cx), arr in sorted(cells.items()):
         key = f'{cy}_{cx}'
         rows = [[l['id'], l['lat'], l['lon'], l['name'], l['kk'], l['kind'], l['cap'], l['fee'], l['access'],
-                 l['hours'], l['op'], l['charge'], l['area'], l['city']] for l in arr]
+                 l['hours'], l['op'], l['charge'], l['area'], l['city']] + ([l['entr']] if l['entr'] else []) for l in arr]
         with open(os.path.join(OUT, 'cells', key + '.json'), 'w', encoding='utf-8') as f:
             json.dump(rows, f, ensure_ascii=False, separators=(',', ':'))
         cell_index.append([key, len(arr), round(sum(l['lat'] for l in arr) / len(arr), 4), round(sum(l['lon'] for l in arr) / len(arr), 4)])
@@ -323,6 +378,7 @@ def build(lots, places, pois, regions, excluded, meta):
         'access': dict(Counter(l['access'] or 'unknown' for l in lots)),
         'kind': dict(Counter(l['kind'] or 'unknown' for l in lots)),
         'hours': sum(1 for l in lots if l['hours']),
+        'entrance': sum(1 for l in lots if l['entr']),
         'no_city': sum(1 for l in lots if l['city'] < 0),
         'excluded_garage_boxes': excluded['garage_boxes'],
         'places': len(pois),
@@ -359,6 +415,7 @@ def coverage_md(index):
         f"|   из них частные | {s['access'].get('private', 0)} | {pct(s['access'].get('private', 0))} |",
         f"|   только для клиентов | {s['access'].get('customers', 0)} | {pct(s['access'].get('customers', 0))} |",
         f"| Часы работы | {s['hours']} | {pct(s['hours'])} |",
+        f"| Въезд (amenity=parking_entrance рядом) | {s['entrance']} | {pct(s['entrance'])} |",
         '| Занятость в реальном времени | 0 | 0% |',
         '',
         'Остальное в приложении показано как «Нет данных». Цены в тенге в OSM почти не указаны.',
