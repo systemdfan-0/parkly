@@ -14,6 +14,8 @@ import { fmtTime } from './time';
 import { plural, spots } from '../format';
 import type { PinCtx } from './pinText';
 import type { SimInput } from './pinReply';
+import { classify, type IntentModel } from './intent';
+import intentModel from './intent-model.json';
 
 export type Talk =
   | { kind: 'say'; text: string; suggest?: string[]; showLot?: string }
@@ -191,17 +193,17 @@ export function talk(inp: TalkInput, strongOnly = false): Talk | null {
   if (only(t, Q_HELP_SHORT, 2)) return say('Подбираю парковку по всему Казахстану: напишите место, когда приедете и бюджет — «Хан Шатыр через 15 минут до 500». Потом можно спросить про цену, места, часы работы или «а поближе?».', EXAMPLES);
 
   if (Q_HELP(t)) return say('Подбираю парковку по всему Казахстану: напишите место, когда приедете и бюджет — «Хан Шатыр через 15 минут до 500». Потом можно спросить про цену, места, часы работы или «а поближе?».', EXAMPLES);
-  if (Q_WHO(t)) return say('Я Пин, помощник Parkly: понимаю простые фразы по правилам и считаю всё на телефоне, без интернета и платных сервисов. Я не большая нейросеть, поэтому лучше всего отвечаю про парковки.', EXAMPLES);
+  if (Q_WHO(t)) return say('Я Пин, помощник Parkly. Понимаю фразы правилами и обученной моделью намерений (точность ≈90% на отложенных фразах), слышу голос, а места прогнозирует ML-модель — всё прямо на телефоне. Я не большая нейросеть вроде ChatGPT, поэтому лучше всего отвечаю про парковки.', EXAMPLES);
   if (Q_EV(t)) {
     const ev = LOTS.filter((l) => l.features.some((f) => /электромоб/i.test(f)));
     return say(ev.length ? `Зарядка есть у демо-парковки ${ev.map((l) => `«${l.name}»`).join(', ')}. В каталоге OSM зарядки для электромобилей я не учитываю — нет данных.` : 'Про зарядки для электромобилей данных у меня нет.', ev.length ? ['Esentai Mall'] : undefined);
   }
-  if (Q_DISABLED(t)) return say('Места для людей с инвалидностью в каталоге не отмечены — нет данных. Смотрите знаки на месте; я могу подобрать ближайшую к входу парковку.', ['Dostyk Plaza, поближе']);
+  if (Q_DISABLED(t)) return say(`Места для людей с инвалидностью отмечены в OSM у ${n((inp.ix.stats as { disabled?: number }).disabled ?? 0)} парковок — в списке у них значок ♿, в карточке число мест. У остальных — нет данных, смотрите знаки на месте; могу подобрать ближайшую к входу.`, ['Dostyk Plaza, поближе']);
   if (Q_RULES(t)) return say('Правил, штрафов и эвакуации в моих данных нет, поэтому не буду гадать. Ориентируйтесь на знаки на месте и сайт акимата вашего города.');
-  if (Q_ML(t)) return say('В Алматы свободные места демо-парковок прогнозирует ML-модель прямо на телефоне — на 5–15 минут вперёд по часу, дню недели и тому, как менялась занятость за последние 15 минут. В других городах датчиков нет, поэтому занятость — «нет данных».');
+  if (Q_ML(t)) return say('В Алматы свободные места демо-парковок прогнозирует ML-модель прямо на телефоне — на 5–15 минут вперёд по часу, дню недели и тому, как менялась занятость за 15 минут; в карточке есть «Почему ИИ так решил». Камера с нейросетью считает машины по фото. Подробно — «Как работает ИИ» на главном экране.', ['Как работает ИИ']);
   if (Q_SOURCE(t)) return say(`Парковки — из OpenStreetMap, выгрузка Geofabrik на ${new Date(inp.ix.source.extractDate).toLocaleDateString('ru-RU')}. Цены, брони и занятость в Алматы — демо-данные, остальное «нет данных», если в OSM пусто.`);
   if (Q_COUNT(t) && /сколко|покрыти|город|больше всего|каталог|база/.test(t)) return catalogStats(t, inp);
-  if (Q_PAY(t)) return say('Оплаты в Parkly нет: брони демонстрационные, деньги не списываются. Как платить на месте, смотрите на табличке парковки — в OSM способ оплаты почти нигде не указан.');
+  if (Q_PAY(t)) return say('Бронь у демо-парковок Алматы можно оплатить через Kaspi или на месте — это демо-оплата, деньги не списываются. В рабочей версии подключим Kaspi Pay. У парковок из каталога OSM способ оплаты почти нигде не указан — смотрите табличку на месте.');
   if (Q_DEMO(t)) return say(`Демо — это ${LOTS.length} парковок Алматы с симулированной занятостью, тарифами и бронью, они стоят на реальных объектах OSM. Остальные ${n(inp.ix.stats.lots)} — настоящие парковки из OSM, но без занятости.`);
   if (Q_OFFLINE(t)) return say('Без интернета работают каталог, поиск по названиям, Пин и прогноз. Не грузятся только новые куски подложки карты и поиск по точному адресу.');
   if (Q_GEO(t)) return say('Геопозицию я беру только после кнопки «Где я» или просьбы «рядом со мной», и она остаётся на телефоне. Разговор со мной тоже никуда не отправляется.', ['Рядом со мной']);
@@ -216,7 +218,30 @@ export function talk(inp: TalkInput, strongOnly = false): Talk | null {
   if (Q_HI(t) && words <= 4) return say('Привет! Куда едем? Напишите место, а если хотите — время и бюджет.', EXAMPLES);
   if (Q_BYE(t) && words <= 4) return say('До встречи! Если что — я тут.');
   if (only(t, Q_OK, 2)) return say(inp.lastLot ? 'Хорошо. Если нужно, спросите про цену, места или «а поближе?».' : 'Хорошо. Куда едем?', inp.lastLot ? ['А сколько стоит?', 'А поближе?'] : EXAMPLES);
-  return null;
+  return byModel(inp);
+}
+
+/** Каноническая фраза, которую правила точно понимают, — для каждого намерения модели. */
+export const CANON: Record<string, string> = {
+  help: 'что ты умеешь', who: 'кто ты', pay: 'оплата', cancel: 'отменить бронь', disabled: 'места для инвалидов', ev: 'зарядка для электромобиля',
+  rules: 'штраф', ml: 'как работает прогноз', source: 'откуда данные', offline: 'работает без интернета', geo: 'мои данные', colors: 'что значат цвета',
+  update: 'новая версия', time: 'который час', offtopic: 'погода', joke: 'анекдот', rude: 'ты тупой', thanks: 'спасибо', hi: 'привет', bye: 'пока',
+  how: 'как дела', ok: 'ок', price: 'а сколько стоит', cap: 'а сколько там мест', hours: 'а до скольки работает', book: 'можно забронировать',
+};
+export const INTENT_MODEL = intentModel as IntentModel;
+export const INTENT_MIN_P = 0.6;
+let inModel = false;
+/** Правила не поняли — спрашиваем модель намерений; уверена ≥ 60% — отвечаем как на каноническую фразу. */
+function byModel(inp: TalkInput): Talk | null {
+  if (inModel || !INTENT_MODEL.labels.length) return null;
+  const top = classify(INTENT_MODEL, inp.text)[0];
+  if (!top || top.p < INTENT_MIN_P || top.label === 'query') return null;
+  if (top.label === 'near') return { kind: 'near' };
+  if (['price', 'cap', 'hours', 'book'].includes(top.label) && !inp.lastLot) return null;
+  const canon = CANON[top.label];
+  if (!canon) return null;
+  inModel = true;
+  try { return talk({ ...inp, text: canon }); } finally { inModel = false; }
 }
 
 /**
