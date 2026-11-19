@@ -119,10 +119,10 @@ export function lineRoute(mode: RouteMode, a: LatLon, b: LatLon): Route {
 }
 
 const cache = new Map<string, { at: number; p: Promise<Route> }>();
-const TTL = 3 * 60_000;
+const TTL = 10 * 60_000; // экономим лимит демо-ключа 2ГИС
 const r4 = (x: number) => x.toFixed(4);
 
-/** Маршрут с кэшем на 3 минуты: 2ГИС (если есть ключ) → OSM → прямая. */
+/** Маршрут с кэшем на 10 минут: 2ГИС (если есть ключ) → OSM → прямая. */
 export function getRoute(mode: RouteMode, a: LatLon, b: LatLon): Promise<Route> {
   const key = get2gisKey();
   const id = `${mode}:${key ? 'g' : 'o'}:${r4(a.lat)},${r4(a.lon)}:${r4(b.lat)},${r4(b.lon)}`;

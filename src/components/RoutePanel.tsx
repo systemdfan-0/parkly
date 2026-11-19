@@ -29,17 +29,22 @@ export function RoutePanel({ lotId, lot, dest }: Props) {
   // откуда едем: геопозиция; без неё в демо Алматы — демо-точка отправления; в другом городе — просим геопозицию
   const from = geo.status === 'ok' && geo.lat != null ? { lat: geo.lat, lon: geo.lon!, me: true } : inAlmaty(lot) ? { lat: origin.lat, lon: origin.lon, me: false } : null;
 
+  // пешком — сразу (1 запрос); на машине — только когда открыли вкладку (экономия лимита 2ГИС)
   useEffect(() => {
     let live = true;
     set({ lotId, car: null, walk: null, mode: hasDest ? 'walk' : 'car' });
-    setBusy(true);
-    const jobs: Promise<unknown>[] = [];
-    if (hasDest) jobs.push(getRoute('walk', lot, dest!).then((r) => live && set({ walk: r })));
-    if (from) jobs.push(getRoute('car', from, target).then((r) => live && set({ car: r })));
-    Promise.allSettled(jobs).then(() => live && setBusy(false));
+    if (hasDest) { setBusy(true); getRoute('walk', lot, dest!).then((r) => live && set({ walk: r })).finally(() => live && setBusy(false)); }
     return () => { live = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lotId, dest?.id, from?.lat, from?.lon, target.lat, target.lon]);
+  }, [lotId, dest?.id]);
+  useEffect(() => {
+    if (mode !== 'car' || !from) return;
+    let live = true;
+    setBusy(true);
+    getRoute('car', from, target).then((r) => live && set({ car: r })).finally(() => live && setBusy(false));
+    return () => { live = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, lotId, from?.lat, from?.lon, target.lat, target.lon]);
   useEffect(() => () => useRoute.setState({ lotId: null, car: null, walk: null }), [lotId]);
 
   const r = mode === 'car' ? car : walk;
