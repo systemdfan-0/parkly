@@ -11,3 +11,4 @@ release/
 .claude/
 ml/scenarios.csv
 .secrets/
+presentation/
