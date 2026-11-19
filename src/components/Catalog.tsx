@@ -12,6 +12,7 @@ import { navLink } from '../nav';
 import { ParkedHere } from './Car';
 import { MeasurementLine } from './Measurement';
 import { RoutePanel } from './RoutePanel';
+import { ReportBox } from './Report';
 
 const fmtDate = (s: string) => { const [d] = s.split(' '); const [y, m, dd] = d.split('-'); return `${dd}.${m}.${y}`; };
 const n = (x: number) => x.toLocaleString('ru-RU').replace(/,/g, ' ');
@@ -51,6 +52,7 @@ export function CatCard({ o, selected, onClick, rank }: { o: CatOption; selected
         {o.tags.includes('best') && <span className="tag tag--best">Лучший выбор</span>}
         {o.tags.includes('closest') && <span className="tag tag--closest">Ближе ко входу</span>}
         {o.tags.includes('free') && <span className="tag tag--cheapest">Бесплатно</span>}
+        {l.dis !== 0 && <span className="tag tag--plain" title="Места для людей с инвалидностью">♿{l.dis > 0 ? ` ${l.dis}` : ''}</span>}
         {l.access === 'private' && <span className="tag tag--off">Частная</span>}
         {l.access === 'customers' && <span className="tag tag--plain">Для клиентов</span>}
         {o.inBudget === null && <span className="tag tag--plain">Цена не указана</span>}
@@ -148,6 +150,7 @@ export function CatalogDetail({ id, onBack }: { id: string; onBack: () => void }
     ['Тип', lot.kind ? CAT_KIND_LABEL[lot.kind] : NO_DATA],
     ['Часы работы', lot.hours || NO_DATA],
     ['Въезд', lot.entr ? 'Отмечен в OSM' : NO_DATA],
+    ['Места ♿', lot.dis > 0 ? `${lot.dis} для людей с инвалидностью` : lot.dis < 0 ? 'Есть (число не указано)' : NO_DATA],
     ['Оператор', lot.op || NO_DATA],
     ['Занятость сейчас', NO_DATA],
     ['Прогноз к приезду', 'Не считаем: нет данных о занятости'],
@@ -172,6 +175,7 @@ export function CatalogDetail({ id, onBack }: { id: string; onBack: () => void }
         <a className="btn btn--primary btn--grow" href={nav.href} target="_blank" rel="noreferrer"><Icon name="route" size={18} /> {nav.text}</a>
         <a className="btn btn--ghost" href={osmUrl} target="_blank" rel="noreferrer">OSM</a>
       </div>
+      <ReportBox lotId={lot.id} now={Date.now()} demo={false} />
       <ParkedHere lat={lot.lat} lon={lot.lon} name={lotTitle(lot)} id={lot.id} />
       <p className="note">{nav.toEntrance ? 'Навигатор ведёт к въезду, отмеченному в OSM. ' : 'Въезд в OSM не отмечен — навигатор ведёт к центру парковки. '}Бронь недоступна: это парковка из открытого каталога, а не демо-партнёр Parkly. Источник: <SourceLine />, объект {lot.osm}.</p>
     </div>

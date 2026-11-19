@@ -6,6 +6,7 @@ import { TREND_REASON } from './profiles';
 import { MIN, fmtTime, fmtDur } from './time';
 import { spotsWord } from '../format';
 import { predictML, ML_MAX_H } from '../ml/predict';
+import { freshReport, REPORT_FACTOR, REPORT_TEXT } from './reports';
 
 export type Priority = 'balanced' | 'close' | 'cheap' | 'reliable';
 export type Tag = 'best' | 'closest' | 'cheapest' | 'reliable';
@@ -29,6 +30,8 @@ export const TENGE_PER_MIN = 50;      // во сколько водитель о
 export const STREET_SEARCH_MIN = 5;   // без брони: найти свободное место вдоль улицы и оплатить
 
 export interface Option {
+  /** Свежая отметка водителя «по факту занято» (минут назад). */
+  reported?: { ago: number; text: string };
   lot: Lot;
   walkM: number;
   walkMin: number;
@@ -98,7 +101,11 @@ export function buildOption(
   const driveMin = extra.arriveIn ?? driveMinutes(haversine(origin.lat, origin.lon, lot.lat, lot.lon), now);
   const eta = now + driveMin * MIN;
   const o = occ[lot.id] ?? 0;
-  const { fc, source: fcSource } = arrivalForecast(lot, o, now, driveMin, bookings, extra.hist?.[lot.id]);
+  const af = arrivalForecast(lot, o, now, driveMin, bookings, extra.hist?.[lot.id]);
+  const { source: fcSource } = af;
+  // водитель отметил «по факту мест нет» — шанс найти место сильно ниже, чем у датчика/прогноза
+  const rep = freshReport(lot.id, now);
+  const fc = rep ? { ...af.fc, pFree: af.fc.pFree * REPORT_FACTOR, lo: 0 } : af.fc;
   let durationMin = wantMin;
   let available = true;
   let unavailable: string | undefined;
@@ -130,7 +137,8 @@ export function buildOption(
   const riskMin = (1 - fc.pFree) * SEARCH_PENALTY_MIN;
   return {
     lot, walkM, walkMin, driveMin, eta, freeNow: fNow, reserved: reservedAt(lot.id, now, bookings), fc, fcSource, price, durationMin,
-    riskMin, score: 0, available, unavailable, warning, tags: [], reason: '', trend,
+    riskMin, score: 0, available, unavailable, warning: rep ? `Водитель отметил ${rep.ago ? `${rep.ago} мин назад` : 'только что'}: ${REPORT_TEXT[rep.kind]}` : warning, tags: [], reason: '', trend,
+    ...(rep ? { reported: { ago: rep.ago, text: REPORT_TEXT[rep.kind] } } : {}),
     trendText: trend === 'flat' ? undefined : TREND_REASON[lot.type][trend], compare: [],
   };
 }

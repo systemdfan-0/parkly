@@ -16,6 +16,7 @@ import { catalogNear } from '../catalog/data';
 import { ParkedHere } from './Car';
 import { MeasurementLine } from './Measurement';
 import { RoutePanel } from './RoutePanel';
+import { ReportBox } from './Report';
 
 interface Props { o: Option; onBack: () => void; onBook: () => void; onMethod: () => void }
 
@@ -136,6 +137,7 @@ export function LotDetail({ o, onBack, onBook, onMethod }: Props) {
         <a className="btn btn--dark btn--grow" href={nav.href} target="_blank" rel="noreferrer"><Icon name="route" size={18} /> {nav.text}</a>
       </div>
       <p className="note">{nav.toEntrance ? 'Навигатор ведёт к въезду, отмеченному в OpenStreetMap.' : 'Въезд в OSM не отмечен — навигатор ведёт к самой парковке.'}</p>
+      <ReportBox lotId={lot.id} now={now} demo />
       <ParkedHere lat={lot.lat} lon={lot.lon} name={lot.name} id={lot.id} />
 
       <div className="actionbar">

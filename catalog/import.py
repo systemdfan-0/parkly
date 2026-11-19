@@ -98,6 +98,14 @@ def to_int(v):
     return int(m.group(1)) if m else None
 
 
+def dis_of(tags):
+    v = (tags.get('capacity:disabled') or '').strip().lower()
+    if v in ('', 'no', '0'):
+        return 0
+    n = to_int(v)
+    return n if n else -1
+
+
 def fee_of(tags):
     v = (tags.get('fee') or tags.get('parking:fee') or '').lower()
     if v in ('no', 'free', 'нет'):
@@ -217,6 +225,8 @@ def parse(pbf):
                 'charge': (tags.get('charge') or '')[:40],
                 'area': int(area_m2) if area_m2 else 0,
                 'entr': None,
+                # места для людей с инвалидностью: число или -1 («есть», без числа)
+                'dis': dis_of(tags),
             })
             continue
 
@@ -366,7 +376,7 @@ def build(lots, places, pois, regions, excluded, meta):
     for (cy, cx), arr in sorted(cells.items()):
         key = f'{cy}_{cx}'
         rows = [[l['id'], l['lat'], l['lon'], l['name'], l['kk'], l['kind'], l['cap'], l['fee'], l['access'],
-                 l['hours'], l['op'], l['charge'], l['area'], l['city']] + ([l['entr']] if l['entr'] else []) for l in arr]
+                 l['hours'], l['op'], l['charge'], l['area'], l['city']] + ([l['entr'], l['dis']] if l['dis'] else [l['entr']] if l['entr'] else []) for l in arr]
         with open(os.path.join(OUT, 'cells', key + '.json'), 'w', encoding='utf-8') as f:
             json.dump(rows, f, ensure_ascii=False, separators=(',', ':'))
         cell_index.append([key, len(arr), round(sum(l['lat'] for l in arr) / len(arr), 4), round(sum(l['lon'] for l in arr) / len(arr), 4)])
@@ -389,6 +399,7 @@ def build(lots, places, pois, regions, excluded, meta):
         'kind': dict(Counter(l['kind'] or 'unknown' for l in lots)),
         'hours': sum(1 for l in lots if l['hours']),
         'entrance': sum(1 for l in lots if l['entr']),
+        'disabled': sum(1 for l in lots if l['dis']),
         'no_city': sum(1 for l in lots if l['city'] < 0),
         'excluded_garage_boxes': excluded['garage_boxes'],
         'places': len(pois),
@@ -426,6 +437,7 @@ def coverage_md(index):
         f"|   только для клиентов | {s['access'].get('customers', 0)} | {pct(s['access'].get('customers', 0))} |",
         f"| Часы работы | {s['hours']} | {pct(s['hours'])} |",
         f"| Въезд (amenity=parking_entrance рядом) | {s['entrance']} | {pct(s['entrance'])} |",
+        f"| Места для людей с инвалидностью (capacity:disabled) | {s['disabled']} | {pct(s['disabled'])} |",
         '| Занятость в реальном времени | 0 | 0% |',
         '',
         'Остальное в приложении показано как «Нет данных». Цены в тенге в OSM почти не указаны.',

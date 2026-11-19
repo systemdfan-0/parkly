@@ -701,3 +701,6 @@ code { font-size: 12.5px; background: var(--asphalt-deep); padding: 1px 5px; bor
 @keyframes kspin { to { transform: rotate(360deg); } }
 .paidline { display: flex; gap: 6px; align-items: center; justify-content: center; color: #3DDBB0; font-weight: 600; }
 .paid { font-style: normal; color: #3DDBB0; }
+.report { margin: 10px 0; display: grid; gap: 8px; }
+.report--on { display: flex; gap: 10px; align-items: center; padding: 10px 12px; border-radius: 14px; background: rgba(255, 156, 59, .12); color: #FFC58A; font-size: 14px; }
+.report--on span { flex: 1; }
