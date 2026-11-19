@@ -54,10 +54,10 @@ describe('«Где моя машина»', () => {
 describe('навигатор: «Ко въезду» / «К парковке»', () => {
   test('есть въезд — ведём к нему; нет — к парковке', () => {
     const a = navLink({ lat: 1, lon: 2, entr: [1.001, 2.002], label: 'P' });
-    expect(a.text).toBe('Ко въезду');
+    expect(a.text).toBe('Ко въезду в навигаторе');
     expect(a.href).toContain('1.001');
     const b = navLink({ lat: 1, lon: 2, entr: null, label: 'P' });
-    expect(b.text).toBe('К парковке');
+    expect(b.text).toBe('В навигаторе');
     expect(b.href).toContain('1,2');
   });
 });

@@ -48,6 +48,8 @@ export function RoutePanel({ lotId, lot, dest }: Props) {
   useEffect(() => () => useRoute.setState({ lotId: null, car: null, walk: null }), [lotId]);
 
   const r = mode === 'car' ? car : walk;
+  // «Включить пробки» — сразу к полю ключа в «Избранное»
+  const openKey = () => { useStore.getState().setTab('saved'); setTimeout(() => document.getElementById('traffic-key')?.scrollIntoView({ block: 'center' }), 250); };
   const share = r && r.mode === 'car' && r.source === '2gis' ? jamShare(r) : null;
   const extra = r && r.usualS != null ? Math.round((r.durS - r.usualS) / 60) : 0;
 
@@ -89,7 +91,13 @@ export function RoutePanel({ lotId, lot, dest }: Props) {
                   <p className="route__legend small"><span><i style={{ background: JAM_COLOR.fast }} />свободно</span><span><i style={{ background: JAM_COLOR.slow }} />плотно</span><span><i style={{ background: JAM_COLOR.jam }} />пробка</span></p>
                 </>
               )}
-              <p className="route__src small muted">Маршрут: {SRC[r.source]}{r.source === '2gis' && mode === 'car' ? ', пробки сейчас' : ''}.{r.source !== '2gis' && mode === 'car' && !get2gisKey() ? ' Пробки — с ключом 2ГИС в «Избранное → Приложение».' : ''}</p>
+              <p className="route__src small muted">Маршрут: {SRC[r.source]}{r.source === '2gis' && mode === 'car' ? ', пробки сейчас' : ''}.</p>
+              {mode === 'car' && (!get2gisKey() || !from?.me) && (
+                <div className="row">
+                  {!get2gisKey() && <button className="btn btn--dark btn--sm" onClick={openKey}>Включить пробки 2ГИС</button>}
+                  {!from?.me && <button className="btn btn--ghost btn--sm" onClick={() => void useMap.getState().locate()}><Icon name="locate" size={16} /> Построить от меня</button>}
+                </div>
+              )}
             </>
           )}
         </div>
@@ -115,7 +123,7 @@ export function TrafficKeySection() {
     setMsg(r === 'ok' ? 'Готово: маршруты на машине — с пробками 2ГИС.' : 'Ключ сохранён. Проверить не удалось — нет сети.');
   };
   return (
-    <div className="appinfo">
+    <div className="appinfo" id="traffic-key">
       <p><b>Пробки 2ГИС</b> <span className={`tag ${has ? 'tag--on' : 'tag--off'}`}>{has ? 'включены' : 'выключены'}</span></p>
       <p className="muted small">Маршрут на машине с учётом пробок сейчас. Ключ хранится только на этом телефоне; в 2ГИС уходят лишь точки маршрута.</p>
       {has ? (

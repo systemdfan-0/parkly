@@ -12,5 +12,6 @@ export function navLink(t: NavTarget, walk = false): { href: string; text: strin
   const href = native
     ? `geo:${lat},${lon}?q=${lat},${lon}(${encodeURIComponent(label)})`
     : `https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}&travelmode=${walk ? 'walking' : 'driving'}`;
-  return { href, text: walk ? 'Маршрут пешком' : toEntrance ? 'Ко въезду' : 'К парковке', toEntrance };
+  // ведёт во внешний навигатор (2ГИС, Яндекс…): там пошаговая навигация; маршрут с пробками — во вкладке «На машине»
+  return { href, text: walk ? 'Маршрут пешком' : toEntrance ? 'Ко въезду в навигаторе' : 'В навигаторе', toEntrance };
 }
