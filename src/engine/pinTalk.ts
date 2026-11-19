@@ -230,12 +230,16 @@ export const CANON: Record<string, string> = {
 };
 export const INTENT_MODEL = intentModel as IntentModel;
 export const INTENT_MIN_P = 0.6;
+/** Порог, при котором модель важнее найденного «места». */
+export const STRONG_P = 0.85;
+const META = new Set(['help', 'who', 'pay', 'cancel', 'disabled', 'ev', 'rules', 'ml', 'source', 'offline', 'geo', 'colors', 'update', 'time', 'offtopic', 'joke', 'rude', 'thanks', 'hi', 'bye', 'how']);
 let inModel = false;
 /** Правила не поняли — спрашиваем модель намерений; уверена ≥ 60% — отвечаем как на каноническую фразу. */
-function byModel(inp: TalkInput): Talk | null {
+function byModel(inp: TalkInput, minP = INTENT_MIN_P): Talk | null {
   if (inModel || !INTENT_MODEL.labels.length) return null;
   const top = classify(INTENT_MODEL, inp.text)[0];
-  if (!top || top.p < INTENT_MIN_P || top.label === 'query') return null;
+  if (!top || top.p < minP || top.label === 'query') return null;
+  if (minP >= STRONG_P && !META.has(top.label)) return null; // до поиска места — только «мета»-вопросы
   if (top.label === 'near') return { kind: 'near' };
   if (['price', 'cap', 'hours', 'book'].includes(top.label) && !inp.lastLot) return null;
   const canon = CANON[top.label];
@@ -258,7 +262,8 @@ function strong(t: string, inp: TalkInput): Talk | null {
   const words = t.split(' ').length;
   if (words <= 3 && (Q_HI(t) || Q_THANKS(t) || Q_BYE(t) || Q_HOW(t) || Q_OK(t))) return talk(inp);
   if (words <= 4 && Q_SHOW(t)) return talk(inp);
-  return null;
+  // модель очень уверена, что это вопрос, а не место («чё по каспи» — не отделение Kaspi Bank)
+  return byModel(inp, STRONG_P);
 }
 
 /** Ответ, когда совсем не понял: коротко и с подсказками. */

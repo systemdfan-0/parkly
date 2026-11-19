@@ -38,3 +38,9 @@ test.each([
 test('названия мест модель считает запросом места', () => {
   for (const q of ['хан шатыр', 'шугыла', 'dostyk plaza']) expect(classify(INTENT_MODEL, q)[0].label).toBe('query');
 });
+
+test('«чё по каспи» — вопрос про оплату даже до поиска места; места по-прежнему находятся', () => {
+  const r = talk(inp('чё по каспи'), true);
+  expect(r?.kind === 'say' && r.text).toMatch(/Kaspi/);
+  for (const q of ['Хан Шатыр', 'Театр Абая через 10 минут', 'Шугыла', 'Dostyk Plaza на 2 часа', 'еду в мегу']) expect(talk(inp(q), true), q).toBeNull();
+});
