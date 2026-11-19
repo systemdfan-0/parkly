@@ -709,3 +709,13 @@ code { font-size: 12.5px; background: var(--asphalt-deep); padding: 1px 5px; bor
 .why__body { margin-top: 8px; padding: 12px; border-radius: 14px; background: #1A1E24; display: grid; gap: 8px; }
 .why__steps { padding-left: 20px; display: grid; gap: 4px; font-size: 15px; }
 .why__steps li::marker { color: #3DDBB0; font-weight: 700; }
+.ai { display: grid; gap: 12px; }
+.ai__card { background: #262B33; border-radius: 16px; padding: 14px; display: grid; gap: 8px; }
+.ai__card h3 { font: 700 17px Unbounded, sans-serif; margin: 0; }
+.ai__bars { display: grid; gap: 6px; }
+.ai__bar { display: grid; grid-template-columns: 9.5em 1fr 3.6em; gap: 8px; align-items: center; }
+.ai__track { height: 12px; border-radius: 6px; background: #1A1E24; overflow: hidden; }
+.ai__track i { display: block; height: 100%; background: #6B7380; border-radius: 6px; }
+.ai__track i.ours { background: #3DDBB0; }
+.ai__bar b { text-align: right; font-size: 15px; }
+.ai__bar b.ours { color: #3DDBB0; }

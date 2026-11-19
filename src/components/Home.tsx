@@ -11,7 +11,7 @@ const QUICK = ['dostyk-plaza', 'esentai', 'mega', 'green-bazaar', 'opera', 'arba
 const CITIES = ['Астана', 'Шымкент', 'Караганда', 'Актобе', 'Атырау', 'Усть-Каменогорск', 'Павлодар', 'Костанай'];
 const n = (x: number) => x.toLocaleString('ru-RU').replace(/,/g, ' ');
 
-export function Home({ onDemo, onCoverage, onAsk, onEvent }: { onDemo: () => void; onCoverage: () => void; onAsk: () => void; onEvent: () => void }) {
+export function Home({ onDemo, onCoverage, onAsk, onEvent, onAI }: { onDemo: () => void; onCoverage: () => void; onAsk: () => void; onEvent: () => void; onAI: () => void }) {
   const setDestination = useStore((s) => s.setDestination);
   const recent = useStore((s) => s.recent);
   const now = useStore((s) => s.sim.now);
@@ -32,6 +32,7 @@ export function Home({ onDemo, onCoverage, onAsk, onEvent }: { onDemo: () => voi
             return <button key={id} className="chip" onClick={() => setDestination(destToPlace(d))}>{d.name}</button>;
           })}
         </div>
+        <button className="chip chip--ghost" onClick={onAI}>🧠 Как работает ИИ</button>
         <button className="chip chip--ghost" onClick={onEvent}>После мероприятия · симуляция двух режимов</button>
       </div>
       {ix && (
