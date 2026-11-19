@@ -29,6 +29,8 @@ interface PinState {
   act: (a: PinAction) => Promise<void>;
   choose: (h: GeoHit) => Promise<void>;
   reset: () => void;
+  /** Короткая реплика Пина без подбора (например, «не расслышал» после голосового ввода). */
+  note: (text: string, suggest?: string[]) => void;
 }
 
 let seq = 0;
@@ -78,6 +80,7 @@ export const usePin = create<PinState>()((set, get) => {
   }
 
   return {
+    note: (text, suggest) => say({ from: 'pin', text, suggest }),
     msgs: [],
     ctx: EMPTY_CTX(),
     lastLot: null,

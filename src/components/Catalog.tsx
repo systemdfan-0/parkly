@@ -11,6 +11,7 @@ import { Icon } from './Icon';
 import { navLink } from '../nav';
 import { ParkedHere } from './Car';
 import { MeasurementLine } from './Measurement';
+import { RoutePanel } from './RoutePanel';
 
 const fmtDate = (s: string) => { const [d] = s.split(' '); const [y, m, dd] = d.split('-'); return `${dd}.${m}.${y}`; };
 const n = (x: number) => x.toLocaleString('ru-RU').replace(/,/g, ' ');
@@ -163,6 +164,7 @@ export function CatalogDetail({ id, onBack }: { id: string; onBack: () => void }
       </div>
       {lot.access === 'private' && <div className="banner banner--warn"><Icon name="info" size={18} /><span>В OSM отмечена как частная: въезд по пропуску. В подборе Пин ставит её ниже и предупреждает.</span></div>}
       <MeasurementLine lotId={lot.id} />
+      <RoutePanel lotId={lot.id} lot={{ lat: lot.lat, lon: lot.lon, entr: lot.entr }} dest={destination} />
       <dl className="facts">
         {rows.map(([k, v]) => <div key={k}><dt>{k}</dt><dd className={v === NO_DATA ? 'nodata' : ''}>{v}</dd></div>)}
       </dl>

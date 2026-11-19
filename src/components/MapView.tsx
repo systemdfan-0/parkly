@@ -1,3 +1,5 @@
+import { useRoute } from './RoutePanel';
+import { JAM_COLOR } from '../route/route';
 import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -71,6 +73,7 @@ export function MapView({ results, cat, wide, padBottom, onPick, onSelect }: Pro
   const selectedId = useStore((s) => s.selectedLotId);
   const pinLotId = useStore((s) => s.pinLotId);
   const lineId = selectedId ?? pinLotId;
+  const routeView = useRoute();
   const now = useStore((s) => s.sim.now);
   const occ = useStore((s) => s.sim.occ);
   const bookings = useStore((s) => s.bookings);
@@ -283,10 +286,31 @@ export function MapView({ results, cat, wide, padBottom, onPick, onSelect }: Pro
     if (!lineId) return;
     const lot = LOT_BY_ID[lineId] ?? catalogLot(lineId);
     if (!lot) return;
-    if (destination && destination.kind !== 'city') {
-      const line: L.LatLngExpression[] = [[lot.lat, lot.lon], [destination.lat, destination.lon]];
-      L.polyline(line, { color: '#262B33', weight: 8, opacity: 0.9, lineCap: 'round', interactive: false }).addTo(g);
-      L.polyline(line, { color: '#FFD23F', weight: 3, dashArray: '7 9', lineCap: 'butt', interactive: false }).addTo(g);
+    const rv = routeView.lotId === lineId ? routeView : null;
+    const carR = rv?.mode === 'car' ? rv.car : null;
+    if (carR) {
+      // маршрут на машине: подложка + участки цветом загруженности (2ГИС) или синий (OSM / по прямой)
+      const all: L.LatLng[] = [];
+      for (const sg of carR.segs) {
+        L.polyline(sg.pts, { color: '#1E2229', weight: 10, opacity: 0.85, lineCap: 'round', lineJoin: 'round', interactive: false }).addTo(g);
+        sg.pts.forEach(([la, lo]) => all.push(L.latLng(la, lo)));
+      }
+      for (const sg of carR.segs) {
+        L.polyline(sg.pts, { color: sg.jam ? JAM_COLOR[sg.jam] : '#2F7BEA', weight: 6, lineCap: 'round', lineJoin: 'round', interactive: false,
+          dashArray: carR.source === 'line' ? '10 10' : undefined }).addTo(g);
+      }
+      if (all.length) {
+        L.circleMarker(all[0], { radius: 7, color: '#fff', weight: 3, fillColor: '#2F7BEA', fillOpacity: 1, interactive: false }).addTo(g);
+        const b = L.latLngBounds(all);
+        if (!m.getBounds().pad(-0.1).contains(b)) m.flyToBounds(b.pad(0.25), { ...pads(), maxZoom: 17, duration: 0.5 });
+      }
+    } else if (destination && destination.kind !== 'city') {
+      // пешком: по тротуарам, если маршрут уже пришёл; пока нет — прямая разметка
+      const wr = rv?.walk;
+      const line: L.LatLngExpression[] = wr && wr.source !== 'line' ? wr.segs.flatMap((sg) => sg.pts) : [[lot.lat, lot.lon], [destination.lat, destination.lon]];
+      if (wr && wr.source !== 'line') line.push([destination.lat, destination.lon]);
+      L.polyline(line, { color: '#262B33', weight: 8, opacity: 0.9, lineCap: 'round', lineJoin: 'round', interactive: false }).addTo(g);
+      L.polyline(line, { color: '#FFD23F', weight: 3, dashArray: '7 9', lineCap: 'butt', lineJoin: 'round', interactive: false }).addTo(g);
       const b = L.latLngBounds(line);
       if (!m.getBounds().pad(-0.15).contains(b)) m.flyToBounds(b.pad(0.4), { ...pads(), maxZoom: 18, duration: 0.5 });
     } else {
@@ -299,7 +323,7 @@ export function MapView({ results, cat, wide, padBottom, onPick, onSelect }: Pro
       if (dx || dy) m.panBy([dx, dy], { duration: 0.4 });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lineId, destination]);
+  }, [lineId, destination, routeView]);
 
   const geoMsg = geo.status === 'denied' ? 'Нет доступа к геолокации. Разрешите его Parkly в настройках телефона или найдите место поиском.'
     : geo.status === 'unavailable' ? 'Не удалось определить местоположение: включите геолокацию на телефоне.'

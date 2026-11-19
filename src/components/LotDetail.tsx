@@ -15,6 +15,7 @@ import { navLink } from '../nav';
 import { catalogNear } from '../catalog/data';
 import { ParkedHere } from './Car';
 import { MeasurementLine } from './Measurement';
+import { RoutePanel } from './RoutePanel';
 
 interface Props { o: Option; onBack: () => void; onBook: () => void; onMethod: () => void }
 
@@ -130,6 +131,7 @@ export function LotDetail({ o, onBack, onBook, onMethod }: Props) {
       )}
 
       <MeasurementLine lotId={lot.id} />
+      <RoutePanel lotId={lot.id} lot={{ lat: lot.lat, lon: lot.lon, entr }} dest={destination} />
       <div className="row detail__nav">
         <a className="btn btn--dark btn--grow" href={nav.href} target="_blank" rel="noreferrer"><Icon name="route" size={18} /> {nav.text}</a>
       </div>

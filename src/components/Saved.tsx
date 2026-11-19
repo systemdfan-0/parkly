@@ -6,6 +6,7 @@ import { spots } from '../format';
 import { Icon } from './Icon';
 import { AppSection } from './UpdateScreen';
 import { CarSection } from './Car';
+import { TrafficKeySection } from './RoutePanel';
 
 /** Открыть парковку: назначение — ближайший ориентир, парковка выбрана. */
 export function useOpenLot() {
@@ -68,6 +69,7 @@ export function Saved() {
         </>
       )}
       <AppSection />
+      <TrafficKeySection />
     </div>
   );
 }

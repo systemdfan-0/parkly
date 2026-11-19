@@ -662,3 +662,22 @@ code { font-size: 12.5px; background: var(--asphalt-deep); padding: 1px 5px; bor
 .evt__track { height: 8px; border-radius: 4px; background: var(--asphalt-deep); overflow: hidden; }
 .evt__track i { display: block; height: 100%; background: #3DDBB0; border-radius: 4px; }
 .evt__track i.full { background: #FF6B6B; }
+
+/* маршрут в карточке парковки: «На машине» / «Пешком» */
+.route { margin: 12px 0; border-radius: 16px; background: var(--asphalt-2, #262B33); overflow: hidden; }
+.route__tabs { display: grid; grid-template-columns: 1fr 1fr; }
+.route__tabs button { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 12px 8px; background: transparent; border: 0; color: #9AA3AE; font: 600 15px Onest, sans-serif; border-bottom: 2px solid #343A44; }
+.route__tabs button b { color: inherit; margin-left: 2px; }
+.route__tabs button.on { color: #FFD23F; border-bottom-color: #FFD23F; }
+.route__tabs button:disabled { opacity: .45; }
+.route__body { padding: 12px 14px 14px; display: grid; gap: 6px; }
+.route__main { font: 400 16px Onest, sans-serif; display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; }
+.route__main b { font: 800 22px Unbounded, sans-serif; }
+.route__live { font: 700 12px Onest, sans-serif; color: #1E2229; background: #3DDBB0; padding: 3px 8px; border-radius: 8px; }
+.route__jam { display: flex; height: 8px; border-radius: 4px; overflow: hidden; background: #1A1E24; }
+.route__jam i { display: block; height: 100%; }
+.route__legend { display: flex; gap: 12px; color: #9AA3AE; }
+.route__legend i { display: inline-block; width: 14px; height: 6px; border-radius: 3px; margin-right: 5px; vertical-align: 1px; }
+.tag--on { background: rgba(61, 219, 176, .16); color: #3DDBB0; }
+.pinbar__mic.is-on { background: #FF6B6B; animation: micpulse 1.1s infinite; }
+@keyframes micpulse { 0% { box-shadow: 0 0 0 0 rgba(255, 107, 107, .55); } 100% { box-shadow: 0 0 0 14px rgba(255, 107, 107, 0); } }

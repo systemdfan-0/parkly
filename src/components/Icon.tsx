@@ -14,6 +14,7 @@ const P: Record<string, string> = {
   ticket: 'M3 6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v3a3 3 0 0 0 0 6v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-3a3 3 0 0 0 0-6Zm2 0v1.8a5 5 0 0 1 0 8.4V18h14v-1.8a5 5 0 0 1 0-8.4V6Zm4 3h6v2H9Zm0 4h6v2H9Z',
   flask: 'M9 2h6v2h-1v5.3l5.6 9.4A2 2 0 0 1 17.9 22H6.1a2 2 0 0 1-1.7-3.3L10 9.3V4H9Zm3 8.2L9.3 15h5.4Z',
   play: 'M8 5v14l11-7Z',
+  mic: 'M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Zm-7 9h2a5 5 0 0 0 10 0h2a7 7 0 0 1-6 6.9V21h3v2H8v-2h3v-3.1A7 7 0 0 1 5 11Z',
   pause: 'M7 5h4v14H7Zm6 0h4v14h-4Z',
   ff: 'M3 6v12l8.5-6Zm9 0v12l8.5-6Z',
   info: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm-1 5h2v2h-2Zm0 4h2v6h-2Z',

@@ -3,6 +3,7 @@ import { usePin, type Msg } from '../pinStore';
 import { useStore } from '../store';
 import type { PinReply } from '../engine/pinReply';
 import { Icon } from './Icon';
+import { listenOnce, stopListening, voiceAvailable, VOICE_ERR } from '../voice';
 
 /** Пин — пингвин в мятном шарфе. */
 export function PinAvatar({ size = 40 }: { size?: number }) {
@@ -116,6 +117,17 @@ export function PinBar({ open, dock = false, onOpen, style }: { open: boolean; d
   const send = usePin((s) => s.send);
   const busy = usePin((s) => s.busy);
   const input = useRef<HTMLInputElement>(null);
+  const [mic, setMic] = useState<'off' | 'on' | 'none'>('off');
+  useEffect(() => { let live = true; void voiceAvailable().then((ok) => { if (live && !ok) setMic('none'); }); return () => { live = false; }; }, []);
+  const talk = async () => {
+    if (mic === 'on') { stopListening(); setMic('off'); return; }
+    if (!open) onOpen();
+    setMic('on');
+    const r = await listenOnce((t) => setText(t));
+    setMic('off');
+    if (r.ok) { setText(''); void send(r.text); }
+    else { setText(''); usePin.getState().note(VOICE_ERR[r.why], r.why === 'nothing' ? ['Еду к театру Абая к 18:40'] : undefined); }
+  };
   const submit = () => {
     const t = text.trim();
     if (!t) { input.current?.focus(); return; }
@@ -129,7 +141,12 @@ export function PinBar({ open, dock = false, onOpen, style }: { open: boolean; d
       {!dock && <PinAvatar size={30} />}
       <input ref={input} value={text} onChange={(e) => setText(e.target.value)} onFocus={() => { if (!open) onOpen(); }}
         placeholder={open ? 'Сообщение Пину' : 'Спросить Пина'} enterKeyHint="send" autoComplete="off" aria-label="Сообщение Пину" />
-      <button type="submit" className="pinbar__send" disabled={busy} aria-label="Отправить"><Icon name="up" size={20} /></button>
+      {mic !== 'none' && !text.trim() ? (
+        <button type="button" className={`pinbar__send pinbar__mic ${mic === 'on' ? 'is-on' : ''}`} disabled={busy} onClick={talk}
+          aria-label={mic === 'on' ? 'Остановить запись' : 'Сказать голосом'} aria-pressed={mic === 'on'}><Icon name="mic" size={20} /></button>
+      ) : (
+        <button type="submit" className="pinbar__send" disabled={busy} aria-label="Отправить"><Icon name="up" size={20} /></button>
+      )}
     </form>
   );
 }
