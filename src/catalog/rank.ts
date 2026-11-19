@@ -1,5 +1,6 @@
 // Подбор парковок из каталога OSM. Здесь нет занятости и почти нет цен — только то, что указано в OSM.
 // Ранжирование: пешком до входа, доступ (частные учитываем, но ниже и с пометкой), известная цена.
+import { freshReport } from '../engine/reports';
 import type { Priority } from '../engine/recommend';
 import { WALK_DETOUR, WALK_M_PER_MIN, fmtDist } from '../engine/geo';
 import { catalogNear, distM, type CatalogLot, type CatKind } from './data';
@@ -79,7 +80,9 @@ export function rankCatalog(place: { lat: number; lon: number }, lots: CatalogLo
     const accessPen = l.access === 'private' ? 30 : l.access === 'customers' ? 4 : 0;
     const pricePen = perHour === 0 ? 0 : perHour != null ? perHour / 50 : l.fee === 1 ? 6 : 3;
     const dataPen = (l.cap == null ? 2 : l.cap < 10 ? 3 : 0) + (l.kind == null ? 1 : 0);
-    const score = walkMin * w.walk + accessPen + pricePen * w.price + dataPen * w.data;
+    // водитель отметил «по факту занято» (до 45 мин) — как будто на 12 минут дальше
+    const repPen = freshReport('osm:' + l.osm, Date.now()) ? 12 : 0;
+    const score = walkMin * w.walk + accessPen + pricePen * w.price + dataPen * w.data + repPen;
     const inBudget = budget == null ? true : perHour == null ? null : perHour <= budget;
     return { lot: l, title: lotTitle(l), distM: d, walkM, walkMin, perHour, score, tags: [], inBudget };
   });

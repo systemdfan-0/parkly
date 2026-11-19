@@ -12,7 +12,7 @@ export function ReportBox({ lotId, now, demo }: { lotId: string; now: number; de
       <div className="report report--on">
         <Icon name="info" size={18} />
         <span>Вы отметили {r.ago ? `${r.ago} мин назад` : 'только что'}: <b>{REPORT_TEXT[r.kind]}</b>.
-          {demo ? ' Пин считает шанс здесь ниже и предлагает другие парковки.' : ' Пин учтёт это в ответах.'} Отметка действует {REPORT_TTL_MIN} мин.</span>
+          {demo ? ' Пин считает шанс здесь ниже и предлагает другие парковки.' : ' Пин ставит её ниже в подборе.'} Отметка действует {REPORT_TTL_MIN} мин.</span>
         <button className="btn btn--ghost btn--sm" onClick={() => clear(lotId)}>Убрать</button>
       </div>
     );

@@ -666,7 +666,7 @@ code { font-size: 12.5px; background: var(--asphalt-deep); padding: 1px 5px; bor
 /* маршрут в карточке парковки: «На машине» / «Пешком» */
 .route { margin: 12px 0; border-radius: 16px; background: var(--asphalt-2, #262B33); overflow: hidden; }
 .route__tabs { display: grid; grid-template-columns: 1fr 1fr; }
-.route__tabs button { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 12px 8px; background: transparent; border: 0; color: #9AA3AE; font: 600 15px Onest, sans-serif; border-bottom: 2px solid #343A44; }
+.route__tabs button { white-space: nowrap; font-size: 14px !important; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 12px 8px; background: transparent; border: 0; color: #9AA3AE; font: 600 15px Onest, sans-serif; border-bottom: 2px solid #343A44; }
 .route__tabs button b { color: inherit; margin-left: 2px; }
 .route__tabs button.on { color: #FFD23F; border-bottom-color: #FFD23F; }
 .route__tabs button:disabled { opacity: .45; }
