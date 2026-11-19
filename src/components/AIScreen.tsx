@@ -1,11 +1,12 @@
 // «Как работает ИИ в Parkly» — все модели и их проверка на одном экране. Числа берутся из отчётов обучения, а не вписаны руками.
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { ML_INFO } from '../ml/predict';
 import arrivals from '../../ml/arrivals.json';
 import { compareEvent, DEFAULT_EVENT } from '../engine/event';
 import { Modal } from './Modal';
 import { Icon } from './Icon';
 import { AI_EXTRA } from './aiExtra';
+import { VisionCount } from './Vision';
 
 const f1 = (x: number) => x.toFixed(1).replace('.', ',');
 const pc = (a: number, n: number) => `${f1((a / n) * 100)}%`;
@@ -35,6 +36,7 @@ export function AIScreen({ onClose }: { onClose: () => void }) {
   const all = (arrivals as any).groups.all.all, tight = (arrivals as any).groups.tight['у ближайшей сейчас 1–3 места (или ни одного)'];
   const ev = useMemo(() => compareEvent(DEFAULT_EVENT), []);
   const top = m['15'].top_features ?? [];
+  const [cam, setCam] = useState(false);
   return (
     <Modal onClose={onClose} label="Как работает ИИ в Parkly" wide>
       <div className="ai">
@@ -69,7 +71,13 @@ export function AIScreen({ onClose }: { onClose: () => void }) {
           <p className="small">Голос — системное распознавание речи. Текст: опечатки, падежи, казахские буквы и латиница, микрорайоны и ЖК (≈23 тыс. мест из OSM), уточнения «а поближе?», «тогда до 700».</p>
           {AI_EXTRA.intent}
         </section>
-        {AI_EXTRA.vision}
+        <section className="ai__card">
+          <h3>5. Камера считает машины — нейросеть</h3>
+          <p className="small">COCO-SSD (SSDLite MobileNet v2, TensorFlow.js) прямо в телефоне: находит машины на фото парковки, свободно ≈ вместимость − машины. Мелкие дальние машины ищем по частям кадра, дубли склеиваем.</p>
+          <div className="row"><button className="btn btn--primary btn--sm" onClick={() => setCam(true)}>📷 Попробовать</button></div>
+          {AI_EXTRA.vision}
+        </section>
+        {cam && <VisionCount onClose={() => setCam(false)} />}
 
         <p className="note">Честно: прогноз обучен на симуляции загрузки демо-парковок, а не на городских датчиках. Импорт реальных замеров (CSV) уже есть — следующий шаг пилот с ТРЦ.</p>
       </div>

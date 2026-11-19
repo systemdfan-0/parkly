@@ -49,6 +49,8 @@
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <!-- голосовой ввод для Пина: системное распознавание речи -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- «Камера считает машины»: снимок парковки для нейросети -->
+    <uses-permission android:name="android.permission.CAMERA" />
     <queries>
         <intent>
             <action android:name="android.speech.RecognitionService" />

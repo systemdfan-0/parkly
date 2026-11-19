@@ -13,6 +13,7 @@ import { ParkedHere } from './Car';
 import { MeasurementLine } from './Measurement';
 import { RoutePanel } from './RoutePanel';
 import { ReportBox } from './Report';
+import { VisionCount } from './Vision';
 
 const fmtDate = (s: string) => { const [d] = s.split(' '); const [y, m, dd] = d.split('-'); return `${dd}.${m}.${y}`; };
 const n = (x: number) => x.toLocaleString('ru-RU').replace(/,/g, ' ');
@@ -129,6 +130,7 @@ export function CatalogResults({ place, r, state, compact }: { place: Place; r: 
 export function CatalogDetail({ id, onBack }: { id: string; onBack: () => void }) {
   const destination = useStore((s) => s.destination);
   const [lot, setLot] = useState<CatalogLot | null>(catalogLot(id));
+  const [cam, setCam] = useState(false);
   const [missing, setMissing] = useState(false);
   useEffect(() => {
     if (lot) return;
@@ -175,6 +177,8 @@ export function CatalogDetail({ id, onBack }: { id: string; onBack: () => void }
         <a className="btn btn--primary btn--grow" href={nav.href} target="_blank" rel="noreferrer"><Icon name="route" size={18} /> {nav.text}</a>
         <a className="btn btn--ghost" href={osmUrl} target="_blank" rel="noreferrer">OSM</a>
       </div>
+      <button className="btn btn--ghost btn--sm btn--full" onClick={() => setCam(true)}>📷 Посчитать машины по фото (нейросеть)</button>
+      {cam && <VisionCount onClose={() => setCam(false)} lot={{ id: lot.id, name: lotTitle(lot), capacity: lot.cap ?? 0, demo: false }} />}
       <ReportBox lotId={lot.id} now={Date.now()} demo={false} />
       <ParkedHere lat={lot.lat} lon={lot.lon} name={lotTitle(lot)} id={lot.id} />
       <p className="note">{nav.toEntrance ? 'Навигатор ведёт к въезду, отмеченному в OSM. ' : 'Въезд в OSM не отмечен — навигатор ведёт к центру парковки. '}Бронь недоступна: это парковка из открытого каталога, а не демо-партнёр Parkly. Источник: <SourceLine />, объект {lot.osm}.</p>

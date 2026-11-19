@@ -719,3 +719,11 @@ code { font-size: 12.5px; background: var(--asphalt-deep); padding: 1px 5px; bor
 .ai__track i.ours { background: #3DDBB0; }
 .ai__bar b { text-align: right; font-size: 15px; }
 .ai__bar b.ours { color: #3DDBB0; }
+.vis { display: grid; gap: 10px; }
+.vis__canvas { width: 100%; height: auto; border-radius: 14px; background: #1A1E24; }
+.vis__res { display: grid; gap: 6px; }
+.vis__big { font: 400 18px Onest, sans-serif; }
+.vis__big b { font: 800 34px Unbounded, sans-serif; color: #3DDBB0; margin-right: 4px; }
+.vis__cap { display: flex; gap: 8px; align-items: center; }
+.vis__cap input { width: 7em; padding: 6px 8px; border-radius: 8px; border: 1px solid #343A44; background: #1A1E24; color: inherit; }
+.ok { color: #3DDBB0; }
