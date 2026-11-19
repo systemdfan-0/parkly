@@ -5,7 +5,7 @@ import { MapView } from './components/MapView';
 import { SearchBar } from './components/SearchBar';
 import { Results } from './components/Results';
 import { LotDetail } from './components/LotDetail';
-import { Confirm } from './components/Confirm';
+import { Confirm, confirmState } from './components/Confirm';
 import { Trips } from './components/Trips';
 import { Saved } from './components/Saved';
 import { Home } from './components/Home';
@@ -91,7 +91,10 @@ export default function App() {
     const a = document.activeElement as HTMLElement | null;
     if (a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA')) { a.blur(); return; }
     if (updScreen) useUpdates.getState().closeScreen();
-    else if (confirmOpen) setConfirmOpen(false);
+    else if (confirmOpen) {
+      setConfirmOpen(false);
+      if (!confirmState.done) useStore.getState().pushNotice({ kind: 'info', title: 'Оплата отменена', text: 'Бронь не создана, деньги не списаны.' });
+    }
     else if (coverage) setCoverage(false);
     else if (aiScreen) setAiScreen(false);
     else if (eventDemo) setEventDemo(false);
@@ -132,6 +135,8 @@ export default function App() {
   }, [setDestination]);
 
   const openPin = () => { setPinOpen(true); if (!wide) setSnap('half'); };
+  // «Попробовать за 1 нажатие»: Пин сам отвечает на типичный запрос — дальше кнопки ведут по шагам
+  const tryDemo = () => { usePin.getState().reset(); openPin(); void usePin.getState().send('Еду в Dostyk Plaza на 2 часа'); };
   const showFromPin = (r: PinReply) => {
     if (!r.show) return;
     // условия именно этого ответа (а не последнего вопроса) — чтобы карточка совпала с тем, о чём говорил Пин
@@ -155,7 +160,7 @@ export default function App() {
   else if (destination?.kind === 'city') content = <CityView place={destination} />;
   else if (demoResults) content = <><Results results={demoResults} /><CatalogResults place={destination!} r={cat.r} state={cat.state} compact /></>;
   else if (destination) content = <CatalogResults place={destination} r={cat.r} state={cat.state} />;
-  else content = <Home onDemo={() => setDemo(true)} onCoverage={() => setCoverage(true)} onAsk={openPin} onEvent={() => setEventDemo(true)} onAI={() => setAiScreen(true)} />;
+  else content = <Home onDemo={() => setDemo(true)} onCoverage={() => setCoverage(true)} onAsk={openPin} onEvent={() => setEventDemo(true)} onAI={() => setAiScreen(true)} onTry={tryDemo} />;
 
   const tabs = (
     <nav className="tabbar" aria-label="Разделы" style={wide ? undefined : { top: `calc(${H}px - var(--tab-h) - var(--safe-b))` }}>

@@ -11,7 +11,7 @@ const QUICK = ['dostyk-plaza', 'esentai', 'mega', 'green-bazaar', 'opera', 'arba
 const CITIES = ['Астана', 'Шымкент', 'Караганда', 'Актобе', 'Атырау', 'Усть-Каменогорск', 'Павлодар', 'Костанай'];
 const n = (x: number) => x.toLocaleString('ru-RU').replace(/,/g, ' ');
 
-export function Home({ onDemo, onCoverage, onAsk, onEvent, onAI }: { onDemo: () => void; onCoverage: () => void; onAsk: () => void; onEvent: () => void; onAI: () => void }) {
+export function Home({ onDemo, onCoverage, onAsk, onEvent, onAI, onTry }: { onDemo: () => void; onCoverage: () => void; onAsk: () => void; onEvent: () => void; onAI: () => void; onTry: () => void }) {
   const setDestination = useStore((s) => s.setDestination);
   const recent = useStore((s) => s.recent);
   const now = useStore((s) => s.sim.now);
@@ -21,6 +21,10 @@ export function Home({ onDemo, onCoverage, onAsk, onEvent, onAI }: { onDemo: () 
   useEffect(() => { if (!ix) loadIndex().then(setIx, () => {}); }, [ix]);
   return (
     <div className="home">
+      <button className="try" onClick={onTry}>
+        <span className="try__play" aria-hidden="true">▶</span>
+        <span><b>Попробовать за 1 нажатие</b><small>Пин подберёт парковку у Dostyk Plaza → откройте её → маршрут и демооплата</small></span>
+      </button>
       <h1 className="slogan">Меньше кругов по городу — больше времени на жизнь</h1>
       <p className="home__lead">Скажите, куда едете, или <button className="link" onClick={onAsk}>напишите Пину</button> своими словами.</p>
       <CarSection compact />

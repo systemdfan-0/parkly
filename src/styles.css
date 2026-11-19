@@ -728,3 +728,10 @@ code { font-size: 12.5px; background: var(--asphalt-deep); padding: 1px 5px; bor
 .vis__cap input { width: 7em; padding: 6px 8px; border-radius: 8px; border: 1px solid #343A44; background: #1A1E24; color: inherit; }
 .ok { color: #3DDBB0; }
 .ai__live { display: grid; gap: 6px; margin-top: 4px; }
+/* «Попробовать за 1 нажатие» — первое, что видит новый человек */
+.try { display: flex; gap: 14px; align-items: center; width: 100%; text-align: left; padding: 14px 16px; margin: 0 0 14px; border: 0; border-radius: 18px;
+  background: linear-gradient(135deg, #FFD23F, #FFC21A); color: #1E2229; font: inherit; box-shadow: 0 8px 24px rgba(255, 210, 63, .25); }
+.try__play { flex: none; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: #1E2229; color: #FFD23F; font-size: 18px; }
+.try b { display: block; font: 800 18px Unbounded, sans-serif; }
+.try small { display: block; font-size: 13px; opacity: .8; margin-top: 2px; }
+.detail__quick { margin: 10px 0 4px; }

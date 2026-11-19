@@ -104,7 +104,13 @@ export function understand(text: string, prev: PinCtx, ix: CatalogIndex, pois: P
   const ctxIdx = new Set<number>();
   qw.forEach((w, i) => { if (i > 0 && ['в', 'во', 'г', 'город', 'городе', 'из', 'по'].includes(qw[i - 1])) ctxIdx.add(i); if (/(да|де|та|те)$/.test(w) && w.length > 5) ctxIdx.add(i); });
   const cityHits = matchCities(ix, qw, ctxIdx);
-  const city = cityHits[0]?.city ?? null;
+  let city = cityHits[0]?.city ?? null;
+  // «еду в Dostyk Plaza»: слово похоже на посёлок Достык, но название места совпадает полнее — это место, а не город
+  if (city) {
+    const cu = cityHits[0].used;
+    const whole = matchPlaces(ix, pois, qw, { near: near ?? null })[0];
+    if (whole && whole.score >= 95 && [...cu].every((i) => whole.used.has(i)) && whole.used.size > cu.size) city = null;
+  }
 
   const skip = new Set<number>();
   qw.forEach((w, i) => { if (STOP.has(w) || /^\d+$/.test(w) || /^\d+(мин|ч|тг|т)$/.test(w)) skip.add(i); });

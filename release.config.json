@@ -1,6 +1,6 @@
 {
-  "versionCode": 9,
-  "versionName": "1.6",
+  "versionCode": 10,
+  "versionName": "1.6.1",
   "manifestUrl": "https://systemdfan-0.github.io/parkly/manifest.json",
   "trustedHosts": [
     "github.com",

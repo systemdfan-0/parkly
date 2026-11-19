@@ -87,6 +87,17 @@ export function LotDetail({ o, onBack, onBook, onMethod }: Props) {
       {!o.available && <div className="banner banner--off"><Icon name="info" size={18} /><span>{o.unavailable}</span></div>}
       {o.available && o.warning && <div className="banner banner--warn"><Icon name="clock" size={18} /><span>{o.warning}</span></div>}
 
+      {/* главное — сразу под заголовком: маршрут и бронь с оплатой */}
+      <div className="row detail__quick">
+        <button className="btn btn--dark btn--grow" onClick={() => document.querySelector('.route')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}>
+          <Icon name="route" size={18} /> Маршрут
+        </button>
+        {canBook && (
+          <button className="btn btn--kaspi btn--grow" onClick={onBook}>Демооплата{o.price.total ? ` · ${tenge(o.price.total)}` : ''}</button>
+        )}
+      </div>
+      {!canBook && o.available && <p className="muted small">{lot.bookable ? (myActive ? 'У вас уже есть бронь здесь — она во вкладке «Брони».' : 'Мест для брони сейчас нет.') : 'Уличная зона: без брони, оплата на месте. Бронь и демооплата — у парковок ТРЦ и БЦ.'}</p>}
+
       {o.available && (
         <>
           <ol className="journey" aria-label="Маршрут по времени">

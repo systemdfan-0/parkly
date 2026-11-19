@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useStore } from '../store';
 import type { Option } from '../engine/recommend';
 import type { Booking } from '../engine/model';
@@ -8,12 +8,16 @@ import { fmtTime, fmtDur, fmtDate } from '../engine/time';
 import { Modal } from './Modal';
 import { Icon } from './Icon';
 
+/** Для кнопки «Назад»: завершена ли бронь (иначе «Назад» = отмена оплаты). */
+export const confirmState = { done: false };
+
 export function Confirm({ o, onClose }: { o: Option; onClose: () => void }) {
   const book = useStore((s) => s.book);
   const destination = useStore((s) => s.destination);
   const setTab = useStore((s) => s.setTab);
   const pushNotice = useStore((s) => s.pushNotice);
   const [done, setDone] = useState<Booking | null>(null);
+  useEffect(() => { confirmState.done = false; }, []);
   const [err, setErr] = useState<string | null>(null);
   const total = o.price.total;
   const [pay, setPay] = useState<'kaspi' | 'onsite'>(total > 0 ? 'kaspi' : 'onsite');
@@ -24,6 +28,7 @@ export function Confirm({ o, onClose }: { o: Option; onClose: () => void }) {
     const r = book({ lotId: o.lot.id, destName: destination?.name ?? o.lot.short, arriveAt: o.eta, durationMin: o.durationMin, pay });
     if (typeof r === 'string') { setErr(r); setKaspi('off'); return; }
     setDone(r);
+    confirmState.done = true;
     pushNotice({ kind: 'success', title: r.paid ? 'Оплачено через Kaspi (демо)' : 'Демо-бронь подтверждена', text: `${o.lot.short}, код ${r.code}${r.paid ? `, ${tenge(r.paid.amount)}` : ''}` });
   };
   const start = () => { if (pay === 'kaspi' && total > 0) setKaspi('ask'); else confirm(); };

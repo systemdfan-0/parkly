@@ -100,7 +100,7 @@ function Bubble({ m, onShow }: { m: Msg; onShow: (r: PinReply) => void }) {
       ) : null}
       {(r?.show || r?.actions?.length || m.options?.length) && (
         <div className="row">
-          {r?.show && <button className="btn btn--primary btn--sm" onClick={() => onShow(r)}><Icon name="map" size={16} /> На карте</button>}
+          {r?.show && <button className="btn btn--primary btn--sm" onClick={() => onShow(r)}><Icon name="map" size={16} /> Открыть парковку</button>}
           {r?.actions?.map((a) => <button key={a.label} className="btn btn--ghost btn--sm" onClick={() => act(a)}>{a.label}</button>)}
           {m.options?.map((h) => (
             <button key={h.place.id} className="chip" onClick={() => choose(h)}>{h.city && h.kind !== 'city' ? `${h.city.ru}: ${h.place.name}` : h.place.name}</button>

@@ -40,3 +40,12 @@ test('карта в Шымкенте — «Шугыла» в Шымкенте', 
   const p = where('Шугыла', { lat: 42.32, lon: 69.59 });
   expect(p.lat).toBeLessThan(42.6);
 });
+
+test.each(['Еду в Dostyk Plaza на 2 часа', 'в Хан Шатыр', 'еду в Esentai Mall'])('«%s» — место, а не одноимённый посёлок', (q) => {
+  const u = understand(q, EMPTY_CTX(), ix, pois, ALMATY);
+  expect(u.kind).toBe('query');
+});
+test('«в Астане Хан Шатыр» и «Караганда» — по-прежнему город', () => {
+  expect(understand('Хан Шатыр в Астане', EMPTY_CTX(), ix, pois, ALMATY).kind).toBe('query');
+  expect(understand('в Караганде', EMPTY_CTX(), ix, pois, ALMATY).kind).toBe('ask-city');
+});
