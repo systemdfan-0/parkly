@@ -304,6 +304,16 @@ export function MapView({ results, cat, wide, padBottom, onPick, onSelect }: Pro
         const b = L.latLngBounds(all);
         if (!m.getBounds().pad(-0.1).contains(b)) m.flyToBounds(b.pad(0.25), { ...pads(), maxZoom: 17, duration: 0.5 });
       }
+    } else if (rv?.mode === 'walk' && rv.walk && !(destination && destination.kind !== 'city')) {
+      // пешком от вас до парковки (без места назначения)
+      const line = rv.walk.segs.flatMap((sg) => sg.pts);
+      L.polyline(line, { color: '#262B33', weight: 8, opacity: 0.9, lineCap: 'round', lineJoin: 'round', interactive: false }).addTo(g);
+      L.polyline(line, { color: '#FFD23F', weight: 3, dashArray: '7 9', lineCap: 'butt', lineJoin: 'round', interactive: false }).addTo(g);
+      if (line.length) {
+        L.circleMarker(line[0], { radius: 7, color: '#fff', weight: 3, fillColor: '#2F7BEA', fillOpacity: 1, interactive: false }).addTo(g);
+        const b = L.latLngBounds(line);
+        if (!m.getBounds().pad(-0.1).contains(b)) m.flyToBounds(b.pad(0.25), { ...pads(), maxZoom: 18, duration: 0.5 });
+      }
     } else if (destination && destination.kind !== 'city') {
       // пешком: по тротуарам, если маршрут уже пришёл; пока нет — прямая разметка
       const wr = rv?.walk;

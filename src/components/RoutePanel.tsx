@@ -29,14 +29,19 @@ export function RoutePanel({ lotId, lot, dest }: Props) {
   // откуда едем: геопозиция; без неё в демо Алматы — демо-точка отправления; в другом городе — просим геопозицию
   const from = geo.status === 'ok' && geo.lat != null ? { lat: geo.lat, lon: geo.lon!, me: true } : inAlmaty(lot) ? { lat: origin.lat, lon: origin.lon, me: false } : null;
 
-  // пешком — сразу (1 запрос); на машине — только когда открыли вкладку (экономия лимита 2ГИС)
+  // пешком: от парковки до места назначения; без него — от вас (геопозиция) до парковки
+  const me = geo.status === 'ok' && geo.lat != null ? { lat: geo.lat, lon: geo.lon! } : null;
+  const walkFrom = hasDest ? lot : me, walkTo = hasDest ? dest! : lot;
+  useEffect(() => { set({ lotId, car: null, walk: null, mode: hasDest ? 'walk' : 'car' }); }, [lotId]); // eslint-disable-line react-hooks/exhaustive-deps
+  // пешком с местом назначения — сразу (1 запрос); остальное — когда открыли вкладку (экономия лимита 2ГИС)
   useEffect(() => {
+    if (!walkFrom || (!hasDest && mode !== 'walk')) return;
     let live = true;
-    set({ lotId, car: null, walk: null, mode: hasDest ? 'walk' : 'car' });
-    if (hasDest) { setBusy(true); getRoute('walk', lot, dest!).then((r) => live && set({ walk: r })).finally(() => live && setBusy(false)); }
+    setBusy(true);
+    getRoute('walk', walkFrom, walkTo).then((r) => live && set({ walk: r })).finally(() => live && setBusy(false));
     return () => { live = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lotId, dest?.id]);
+  }, [lotId, dest?.id, mode, walkFrom?.lat, walkFrom?.lon]);
   useEffect(() => {
     if (mode !== 'car' || !from) return;
     let live = true;
@@ -59,7 +64,7 @@ export function RoutePanel({ lotId, lot, dest }: Props) {
         <button role="tab" aria-selected={mode === 'car'} className={mode === 'car' ? 'on' : ''} onClick={() => set({ mode: 'car' })}>
           <Icon name="car" size={18} /> На машине{car ? <b>{fmtDur(car.durS)}</b> : null}
         </button>
-        <button role="tab" aria-selected={mode === 'walk'} className={mode === 'walk' ? 'on' : ''} onClick={() => set({ mode: 'walk' })} disabled={!hasDest}>
+        <button role="tab" aria-selected={mode === 'walk'} className={mode === 'walk' ? 'on' : ''} onClick={() => set({ mode: 'walk' })}>
           <Icon name="walk" size={18} /> Пешком{walk ? <b>{fmtDur(walk.durS)}</b> : null}
         </button>
       </div>
@@ -69,8 +74,13 @@ export function RoutePanel({ lotId, lot, dest }: Props) {
           <button className="btn btn--dark btn--sm" onClick={() => void useMap.getState().locate()}><Icon name="locate" size={16} /> Определить, где я</button>
         </div>
       )}
-      {mode === 'walk' && !hasDest && <p className="route__body muted small">Выберите место назначения — покажу путь от парковки до входа.</p>}
-      {((mode === 'car' && from) || (mode === 'walk' && hasDest)) && (
+      {mode === 'walk' && !walkFrom && (
+        <div className="route__body">
+          <p className="muted small">Покажу, сколько идти от вас до парковки — нужна геопозиция. Или выберите место назначения: путь от парковки до входа.</p>
+          <button className="btn btn--dark btn--sm" onClick={() => void useMap.getState().locate()}><Icon name="locate" size={16} /> Определить, где я</button>
+        </div>
+      )}
+      {((mode === 'car' && from) || (mode === 'walk' && walkFrom)) && (
         <div className="route__body">
           {!r && busy && <p className="muted small">Строю маршрут…</p>}
           {r && (
@@ -80,7 +90,7 @@ export function RoutePanel({ lotId, lot, dest }: Props) {
               <p className="muted small">
                 {mode === 'car'
                   ? `${from?.me ? 'От вас' : `От «${origin.name}» (демо)`} до ${lot.entr ? 'въезда' : 'парковки'}`
-                  : `От парковки до «${dest!.name}» по тротуарам`}
+                  : hasDest ? `От парковки до «${dest!.name}» по тротуарам` : `От вас до ${lot.entr ? 'въезда парковки' : 'парковки'} пешком, по тротуарам`}
                 {r.usualS != null && Math.abs(extra) >= 1 ? ` · обычно в это время ${fmtDur(r.usualS)}${extra > 0 ? `, пробки +${extra} мин` : ''}` : ''}
               </p>
               {share && (
